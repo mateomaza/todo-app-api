@@ -1,5 +1,6 @@
 export class CreateTaskDto {
-    title: string;
-    description: string;
-    completed: boolean;
-  }
+  title: string;
+  description: string;
+  completed: boolean;
+  createdAt: Date;
+}

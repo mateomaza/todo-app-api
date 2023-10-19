@@ -1,6 +1,6 @@
-/* eslint-disable prettier/prettier */
 import { Controller, Get, Post, Body } from '@nestjs/common';
 import { TaskService } from './task.service';
+import { CreateTaskDto } from './dto/create-task.dto';
 
 @Controller('tasks')
 export class TaskController {
@@ -8,11 +8,13 @@ export class TaskController {
 
   @Get()
   findAll() {
-    // Implement the logic to fetch all tasks from the database.
+    const tasks = this.taskService.findAll();
+    return tasks;
   }
 
   @Post()
   create(@Body() createTaskDto: CreateTaskDto) {
-    // Implement the logic to create a new task in the database.
+    const newTask = this.taskService.create(createTaskDto);
+    return newTask;
   }
 }
