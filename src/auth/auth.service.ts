@@ -22,6 +22,10 @@ export class AuthService {
     const newUser = await this.userService.create(user);
     return newUser;
   }
+  async isEmailInUse(email: string): Promise<boolean> {
+    const existingUser = await this.userModel.findOne({ email }).exec();
+    return !!existingUser;
+  }
   async login(user: Partial<User>) {
     const payload = { username: user.username, sub: user.id };
     return {
