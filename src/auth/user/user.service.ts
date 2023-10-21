@@ -1,18 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import { PassportLocalModel } from 'mongoose';
-import { UserModel } from './user.model';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { User } from './user.model';
 
 @Injectable()
 export class UserService {
-  constructor() {
-    this.userModel = UserModel;
-  }
+  constructor(@InjectModel('User') private readonly userModel: Model<User>) {}
 
-  async create(user: Partial<UserModel>): Promise<UserModel> {
+  async create(user: Partial<User>): Promise<User> {
     return this.userModel.create(user);
   }
 
-  async findOneByUsername(username: string): Promise<UserModel> {
+  async findOneByUsername(username: string): Promise<User> {
     return this.userModel.findOne({ username }).exec();
   }
 }

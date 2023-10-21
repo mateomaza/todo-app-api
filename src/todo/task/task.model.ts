@@ -23,4 +23,4 @@ export class Task extends Document {
   createdAt: Date;
 }
 
-export const TaskModel = SchemaFactory.createForClass(Task);
+export const TaskSchema = SchemaFactory.createForClass(Task);

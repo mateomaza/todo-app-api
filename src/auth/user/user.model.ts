@@ -1,8 +1,19 @@
-import * as mongoose from 'mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { v4 as uuidv4 } from 'uuid';
 
-const UserSchema = new mongoose.Schema({
-  username: String,
-  password: String,
-});
+@Schema()
+export class User extends Document {
+  @Prop({ default: uuidv4() })
+  id: string;
 
-export const UserModel = mongoose.model('User', UserSchema);
+  @Prop()
+  username: string;
+
+  @Prop()
+  password: string;
+
+  @Prop({ default: Date.now })
+  createdAt: Date;
+}
+
+export const UserSchema = SchemaFactory.createForClass(User);

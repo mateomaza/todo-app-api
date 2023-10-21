@@ -1,17 +1,18 @@
 import { Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { JwtService } from '@nestjs/jwt';
+import { User } from './user/user.model';
 import { UserService } from './user/user.service';
-import { UserModel } from './user/user.model';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectModel('User') private readonly userModel: Model<UserModel>,
+    @InjectModel('User') private readonly userModel: Model<User>,
+    private readonly userService: UserService,
+    private readonly jwtService: JwtService,
   ) {}
-
-  async register(user: Partial<UserModel>) {
+  async register(user: Partial<User>) {
     const existingUser = await this.userService.findOneByUsername(
       user.username,
     );
@@ -21,9 +22,8 @@ export class AuthService {
     const newUser = await this.userService.create(user);
     return newUser;
   }
-
-  async login(user: UserModel) {
-    const payload = { username: user.username, sub: user._id };
+  async login(user: Partial<User>) {
+    const payload = { username: user.username, sub: user.id };
     return {
       access_token: this.jwtService.sign(payload),
     };
