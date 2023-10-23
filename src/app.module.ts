@@ -3,9 +3,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { APP_PIPE } from '@nestjs/core';
-import { MONGO_URI } from 'secrets';
 @Module({
-  imports: [MongooseModule.forRoot(MONGO_URI)],
+  imports: [MongooseModule.forRoot(process.env.MONGO_URI)],
   controllers: [AppController],
   providers: [
     {
