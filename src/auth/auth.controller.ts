@@ -8,8 +8,8 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './local-auth.guard';
-import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 
 @Controller('api/auth')
 export class AuthController {
@@ -17,11 +17,20 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
+    const usernameInUse = await this.authService.isUsernameInUse(
+      registerDto.username,
+    );
     const emailInUse = await this.authService.isEmailInUse(registerDto.email);
+    if (usernameInUse) {
+      throw new HttpException(
+        'Username is already in use',
+        HttpStatus.CONFLICT,
+      );
+    }
     if (emailInUse) {
       throw new HttpException(
         'Email is already registered',
-        HttpStatus.BAD_REQUEST,
+        HttpStatus.CONFLICT,
       );
     }
     return this.authService.register(registerDto);
