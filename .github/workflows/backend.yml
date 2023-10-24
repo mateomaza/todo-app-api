@@ -19,10 +19,10 @@ jobs:
         node-version: 16
 
     - name: Install Dependencies
-      run: nest install
+      run: npm install
 
     - name: Run Tests
-      run: nest test
+      run: npm run test
 
     env:
       MONGO_URI: ${{ secrets.MONGO_URI }}
