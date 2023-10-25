@@ -1,22 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from 'src/auth/auth.controller';
 import { AuthService } from 'src/auth/auth.service';
-import * as request from 'supertest';
-import { JwtService } from '@nestjs/jwt';
+import request from 'supertest';
+import { getModelForClass } from '@typegoose/typegoose';
 import { User } from 'src/auth/user/user.model';
 import {
   HttpStatus,
   INestApplication,
-  UnauthorizedException,
   ConflictException,
 } from '@nestjs/common';
 
-const UserModel: Model<User> = User;
+const UserModel = getModelForClass(User);
 
 describe('AuthController', () => {
   let app: INestApplication;
   let authService: AuthService;
-  let jwtService: JwtService;
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -54,18 +52,24 @@ describe('AuthController', () => {
 
   it('should handle login attempts', async () => {
     const user = new UserModel({
+      id: 'user_id',
       username: 'testuser',
       password: 'password',
     });
     await user.save();
-    try {
-      const result = await authService.login(user);
-      expect(result).toBeDefined();
-      const decoded = jwtService.decode(result.access_token);
-      expect(decoded.username).toBe(user.username);
-    } catch (error) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
+    const response = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        username: 'testuser',
+        password: 'password',
+      })
+      .expect(HttpStatus.CREATED);
+
+    expect(response.body).toEqual({
+      id: 'user_id',
+      username: 'newuser',
+      email: 'newuser@example.com',
+    });
   });
 
   it('should handle existing username during registration', async () => {

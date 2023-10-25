@@ -30,10 +30,8 @@ export class AuthService {
     const newUser = await this.userService.create(user);
     return newUser;
   }
-  async isUsernameInUse(user: Partial<User>): Promise<boolean> {
-    const existingUser = await this.userService.findOneByUsername(
-      user.username,
-    );
+  async isUsernameInUse(username: string): Promise<boolean> {
+    const existingUser = await this.userService.findOneByUsername(username);
     return !!existingUser;
   }
   async isEmailInUse(email: string): Promise<boolean> {
