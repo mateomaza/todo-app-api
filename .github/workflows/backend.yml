@@ -25,4 +25,4 @@ jobs:
       run: npm run test
 
     env:
-      MONGO_URI: ${{ secrets.PRODUCTION_MONGO_URI }}
+      MONGO_URI: ${{ secrets.MONGO_URI }}

@@ -5,7 +5,9 @@ import {
   UseGuards,
   HttpException,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './local-auth.guard';
 import { LoginDto } from './dto/login.dto';
@@ -38,8 +40,20 @@ export class AuthController {
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Body() loginDto: LoginDto) {
+  async login(@Req() req: Request, @Body() loginDto: LoginDto) {
     const result = await this.authService.login(loginDto);
-    return result;
+    if (req.user) {
+      return {
+        message: 'Login successful',
+        user: req.user,
+        jwtKey: result,
+        statusCode: HttpStatus.OK,
+      };
+    } else {
+      return {
+        message: 'Login failed',
+        statusCode: HttpStatus.UNAUTHORIZED,
+      };
+    }
   }
 }

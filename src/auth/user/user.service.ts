@@ -10,7 +10,6 @@ export class UserService {
   async create(user: Partial<User>): Promise<User> {
     return this.userModel.create(user);
   }
-
   async findOneByUsername(username: string): Promise<User> {
     return this.userModel.findOne({ username }).exec();
   }
