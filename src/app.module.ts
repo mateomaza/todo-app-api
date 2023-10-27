@@ -10,6 +10,9 @@ import { TaskModule } from './todo/task/task.module';
 import { TaskService } from './todo/task/task.service';
 import { AuthController } from './auth/auth.controller';
 import { TaskController } from './todo/task/task.controller';
+import { UserService } from './auth/user/user.service';
+import { config } from 'dotenv';
+config();
 @Module({
   imports: [
     MongooseModule.forRoot(process.env.MONGO_URI),
@@ -25,6 +28,7 @@ import { TaskController } from './todo/task/task.controller';
     AppService,
     AuthService,
     TaskService,
+    UserService,
   ],
 })
 export class AppModule {}

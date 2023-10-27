@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
 import { AuthController } from 'src/auth/auth.controller';
 import { AuthService } from 'src/auth/auth.service';
-import { UserModule } from 'src/auth/user/user.module';
+//import { UserModule } from 'src/auth/user/user.module';
 import request from 'supertest';
 import { getModelForClass } from '@typegoose/typegoose';
 import { User } from 'src/auth/user/user.model';
@@ -12,6 +12,10 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { AuthModule } from 'src/auth/auth.module';
+import { MongooseModule } from '@nestjs/mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import { UserModule } from 'src/auth/user/user.module';
+import { UserService } from 'src/auth/user/user.service';
 
 const UserModel = getModelForClass(User);
 
@@ -23,11 +27,29 @@ describe('AuthController', () => {
   let userModel: typeof UserModel;
   let authService: AuthService;
 
+  beforeEach(() => {
+    jest.setTimeout(20000);
+  });
+
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [UserModule, AuthModule],
+      imports: [
+        AuthModule,
+        UserModule,
+        MongooseModule.forRootAsync({
+          useFactory: async () => {
+            const mongo = await MongoMemoryServer.create();
+            const uri = mongo.getUri();
+            return {
+              uri,
+              useNewUrlParser: true,
+              useUnifiedTopology: true,
+            };
+          },
+        }),
+      ],
       controllers: [AuthController],
-      providers: [AuthService],
+      providers: [AuthService, UserService],
     }).compile();
 
     app = module.createNestApplication();
@@ -51,7 +73,7 @@ describe('AuthController', () => {
       username: 'newuser',
       email: 'newuser@example.com',
     });
-  }, 10000);
+  });
 
   it('should handle login attempts', async () => {
     const user = new UserModel({
@@ -98,7 +120,7 @@ describe('AuthController', () => {
       username: 'newuser',
       email: 'newuser@example.com',
     });
-  }, 10000);
+  });
 
   it('should handle existing username during registration', async () => {
     authService.register = jest
@@ -117,7 +139,7 @@ describe('AuthController', () => {
     expect(errorResponse.body).toEqual({
       message: 'Username is already in use',
     });
-  }, 10000);
+  });
 
   it('should handle existing email during registration', async () => {
     authService.register = jest
@@ -136,7 +158,7 @@ describe('AuthController', () => {
     expect(errorResponse.body).toEqual({
       message: 'Email is already registered',
     });
-  }, 10000);
+  });
   afterEach(async () => {
     await UserModel.deleteMany({});
   });

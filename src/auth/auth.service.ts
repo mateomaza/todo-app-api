@@ -14,14 +14,14 @@ export class AuthService {
   async login({ username, password }: LoginDto) {
     const user = await this.userService.findOneByUsername(username);
     if (!user) {
-      return { success: false, message: 'User not found' };
+      return { message: 'User not found' };
     }
     if (!(await bcrypt.compare(password, user.password))) {
-      return { success: false, message: 'Incorrect password' };
+      return { message: 'Incorrect password' };
     }
     const payload = { username: user.username, sub: user.id };
     const access_token = this.jwtService.sign(payload);
-    return { success: true, access_token };
+    return { message: 'Login successful', access_token };
   }
   async register(user: Partial<User>) {
     const newUser = await this.userService.create(user);

@@ -44,14 +44,14 @@ export class AuthController {
     const result = await this.authService.login(loginDto);
     if (req.user) {
       return {
-        message: 'Login successful',
+        message: result.message,
         user: req.user,
-        jwtKey: result,
+        accessToken: result.access_token,
         statusCode: HttpStatus.OK,
       };
     } else {
       return {
-        message: 'Login failed',
+        message: result.message,
         statusCode: HttpStatus.UNAUTHORIZED,
       };
     }
