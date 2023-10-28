@@ -4,10 +4,13 @@ import { UserService } from './user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class AuthService {
   constructor(
+    @InjectModel(User.name) private readonly userModel: Model<User>,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
   ) {}

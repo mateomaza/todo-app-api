@@ -1,36 +1,30 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getModelToken } from '@nestjs/mongoose';
-import { AuthController } from 'src/auth/auth.controller';
-import { AuthService } from 'src/auth/auth.service';
-//import { UserModule } from 'src/auth/user/user.module';
+import { AuthService } from './auth.service';
 import request from 'supertest';
 import { getModelForClass } from '@typegoose/typegoose';
-import { User } from 'src/auth/user/user.model';
+import { User } from './user/user.model';
 import {
   HttpStatus,
   INestApplication,
   ConflictException,
+  ValidationPipe,
 } from '@nestjs/common';
-import { AuthModule } from 'src/auth/auth.module';
+import { AuthModule } from './auth.module';
+import { UserModule } from './user/user.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { UserModule } from 'src/auth/user/user.module';
-import { UserService } from 'src/auth/user/user.service';
+import { UserService } from './user/user.service';
+import { JwtService } from '@nestjs/jwt';
 
 const UserModel = getModelForClass(User);
 
 describe('AuthController', () => {
   let app: INestApplication;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let authController: AuthController;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let userModel: typeof UserModel;
   let authService: AuthService;
 
   beforeEach(() => {
-    jest.setTimeout(20000);
+    jest.setTimeout(30000);
   });
-
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
@@ -48,14 +42,12 @@ describe('AuthController', () => {
           },
         }),
       ],
-      controllers: [AuthController],
-      providers: [AuthService, UserService],
+      providers: [AuthService, UserService, JwtService, UserModel],
     }).compile();
-
     app = module.createNestApplication();
-    authController = module.get<AuthController>(AuthController);
-    userModel = module.get(getModelToken(User.name));
+    app.useGlobalPipes(new ValidationPipe());
     await app.init();
+    authService = module.get<AuthService>(AuthService);
   });
 
   it('should register a user', async () => {
@@ -91,35 +83,26 @@ describe('AuthController', () => {
       })
       .expect(HttpStatus.OK);
 
-    expect(okResponse.body).toEqual({
-      id: 'user_id',
-      username: 'testuser',
-      email: 'testuser@example.com',
-    });
-    const badResponse = await request(app.getHttpServer())
+    expect(okResponse.body.message).toBe('Login successful');
+    expect(okResponse.body.user).toBeDefined();
+    expect(okResponse.body.accessToken).toBeDefined();
+    expect(okResponse.body.statusCode).toBe(HttpStatus.OK);
+    const badResponse1 = await request(app.getHttpServer())
       .post('/auth/login')
       .send({
         username: 'testuser',
         password: 'wrong_password',
-      })
-      .expect(HttpStatus.BAD_REQUEST);
-    expect(badResponse.body).toEqual({
-      id: 'user_id',
-      username: 'newuser',
-      email: 'newuser@example.com',
-    });
+      });
+    expect(badResponse1.body.message).toBe('Incorrect password');
+    expect(badResponse1.body.statusCode).toBe(HttpStatus.BAD_REQUEST);
     const badResponse2 = await request(app.getHttpServer())
       .post('/auth/login')
       .send({
         username: 'non_existing_user',
         password: '123',
-      })
-      .expect(HttpStatus.BAD_REQUEST);
-    expect(badResponse2.body).toEqual({
-      id: 'user_id',
-      username: 'newuser',
-      email: 'newuser@example.com',
-    });
+      });
+    expect(badResponse2.body.message).toBe('User not found');
+    expect(badResponse2.body.statusCode).toBe(HttpStatus.BAD_REQUEST);
   });
 
   it('should handle existing username during registration', async () => {
@@ -164,5 +147,5 @@ describe('AuthController', () => {
   });
   afterAll(async () => {
     await app.close();
-  }, 10000);
+  });
 });

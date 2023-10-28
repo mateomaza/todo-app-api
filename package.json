@@ -78,7 +78,7 @@
     "moduleNameMapper": {
       "^src/(.*)$": "<rootDir>/../src/$1"
     },
-    "rootDir": "test",
+    "rootDir": "src",
     "testMatch": [
       "**/*.spec.ts"
     ],
@@ -89,7 +89,6 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node",
-    "testTimeout": 30000
+    "testEnvironment": "node"
   }
 }
