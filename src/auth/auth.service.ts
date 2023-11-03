@@ -3,30 +3,22 @@ import { User } from './user/user.model';
 import { UserService } from './user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login.dto';
-import * as bcrypt from 'bcrypt';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectModel(User.name) private readonly userModel: Model<User>,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
   ) {}
-  async login({ username, password }: LoginDto) {
+  async login({
+    username,
+  }: LoginDto): Promise<{ message: string; access_token: string }> {
     const user = await this.userService.findOneByUsername(username);
-    if (!user) {
-      return { message: 'User not found' };
-    }
-    if (!(await bcrypt.compare(password, user.password))) {
-      return { message: 'Incorrect password' };
-    }
     const payload = { username: user.username, sub: user.id };
     const access_token = this.jwtService.sign(payload);
     return { message: 'Login successful', access_token };
   }
-  async register(user: Partial<User>) {
+  async register(user: Partial<User>): Promise<User> {
     const newUser = await this.userService.create(user);
     return newUser;
   }

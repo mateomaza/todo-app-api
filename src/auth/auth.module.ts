@@ -4,11 +4,10 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { PassportModule } from '@nestjs/passport';
 import { LocalStrategy } from './local.strategy';
-import { JwtModule, JwtService } from '@nestjs/jwt';
+import { JwtModule } from '@nestjs/jwt';
 import { JwtAuthGuard } from './jwt.auth.guard';
 import { LocalAuthGuard } from './local-auth.guard';
 import { config } from 'dotenv';
-import { UserService } from './user/user.service';
 config();
 
 @Module({
@@ -21,14 +20,7 @@ config();
     }),
   ],
   controllers: [AuthController],
-  providers: [
-    AuthService,
-    LocalStrategy,
-    LocalAuthGuard,
-    JwtAuthGuard,
-    UserService,
-    JwtService,
-  ],
-  exports: [JwtAuthGuard],
+  providers: [AuthService, LocalStrategy, LocalAuthGuard, JwtAuthGuard],
+  exports: [AuthService, JwtAuthGuard],
 })
 export class AuthModule {}

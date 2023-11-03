@@ -6,6 +6,7 @@ import {
   HttpException,
   HttpStatus,
   Req,
+  HttpCode,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
@@ -25,34 +26,26 @@ export class AuthController {
     const emailInUse = await this.authService.isEmailInUse(registerDto.email);
     if (usernameInUse) {
       throw new HttpException(
-        'Username is already in use',
+        'Username is already registered',
         HttpStatus.CONFLICT,
       );
     }
     if (emailInUse) {
-      throw new HttpException(
-        'Email is already registered',
-        HttpStatus.CONFLICT,
-      );
+      throw new HttpException('Email is already in use', HttpStatus.CONFLICT);
     }
     return this.authService.register(registerDto);
   }
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   async login(@Req() req: Request, @Body() loginDto: LoginDto) {
     const result = await this.authService.login(loginDto);
     if (req.user) {
       return {
         message: result.message,
         user: req.user,
-        accessToken: result.access_token,
-        statusCode: HttpStatus.OK,
-      };
-    } else {
-      return {
-        message: result.message,
-        statusCode: HttpStatus.UNAUTHORIZED,
+        access_token: result.access_token,
       };
     }
   }
