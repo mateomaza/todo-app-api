@@ -8,6 +8,7 @@ import {
   NotFoundException,
   UnauthorizedException,
   ExecutionContext,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthModule } from './auth.module';
 import { User, UserSchema } from './user/user.model';
@@ -57,7 +58,7 @@ describe('AuthController (e2e)', () => {
       imports: [
         MongooseModule.forRootAsync({
           useFactory: async () => ({
-            uri: await mongoMemoryServer.getUri(),
+            uri: mongoMemoryServer.getUri(),
           }),
         }),
         MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
@@ -79,8 +80,8 @@ describe('AuthController (e2e)', () => {
     const response = await request(app.getHttpServer())
       .post('/api/auth/register')
       .send({
-        username: 'new_user',
-        email: 'new_email@example.com',
+        username: mockCreatedUser.username,
+        email: mockCreatedUser.email,
         password: 'password',
       })
       .expect(HttpStatus.CREATED);
@@ -124,6 +125,52 @@ describe('AuthController (e2e)', () => {
     });
   });
 
+  it('should handle no password input during registration', async () => {
+    authService.login.mockRejectedValue(
+      new BadRequestException(['password should not be empty']),
+    );
+    const response = await request(app.getHttpServer())
+      .post('/api/auth/register')
+      .send({
+        username: mockCreatedUser.username,
+        email: mockCreatedUser.email,
+      })
+      .expect(HttpStatus.BAD_REQUEST);
+    expect(response.body.message).toStrictEqual([
+      'password should not be empty',
+    ]);
+  });
+
+  it('should handle no username input during registration', async () => {
+    authService.login.mockRejectedValue(
+      new BadRequestException(['username should not be empty']),
+    );
+    const response = await request(app.getHttpServer())
+      .post('/api/auth/register')
+      .send({
+        email: mockCreatedUser.email,
+        password: 'password',
+      })
+      .expect(HttpStatus.BAD_REQUEST);
+    expect(response.body.message).toStrictEqual([
+      'username should not be empty',
+    ]);
+  });
+
+  it('should handle no email input during registration', async () => {
+    authService.login.mockRejectedValue(
+      new BadRequestException(['email should not be empty']),
+    );
+    const response = await request(app.getHttpServer())
+      .post('/api/auth/register')
+      .send({
+        username: mockCreatedUser.username,
+        password: 'password',
+      })
+      .expect(HttpStatus.BAD_REQUEST);
+    expect(response.body.message).toStrictEqual(['email should not be empty']);
+  });
+
   it('should handle successful login attempts', async () => {
     authService.login.mockResolvedValue({
       message: 'Login successful',
@@ -163,11 +210,39 @@ describe('AuthController (e2e)', () => {
       .post('/api/auth/login')
       .send({
         username: 'non_existing_user',
-        password: '123',
+        password: 'password',
       })
       .expect(HttpStatus.NOT_FOUND);
 
     expect(response.body.message).toBe('Invalid credentials');
+  });
+  it('should reject login attempts with no password input', async () => {
+    authService.login.mockRejectedValue(
+      new BadRequestException(['password should not be empty']),
+    );
+    const response = await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({
+        username: mockCreatedUser.username,
+      })
+      .expect(HttpStatus.BAD_REQUEST);
+    expect(response.body.message).toStrictEqual([
+      'password should not be empty',
+    ]);
+  });
+  it('should reject login attempts with no username input', async () => {
+    authService.login.mockRejectedValue(
+      new BadRequestException(['username should not be empty']),
+    );
+    const response = await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({
+        password: 'password',
+      })
+      .expect(HttpStatus.BAD_REQUEST);
+    expect(response.body.message).toStrictEqual([
+      'username should not be empty',
+    ]);
   });
   afterAll(async () => {
     await app.close();
