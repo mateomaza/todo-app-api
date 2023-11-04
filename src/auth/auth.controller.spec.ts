@@ -17,18 +17,11 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UserModule } from './user/user.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
-interface UserResponse {
-  id: string;
-  username: string;
-  email: string;
-  createdAt: string;
-}
-
-const mockCreatedUser: UserResponse = {
+const mockCreatedUser: Partial<User> = {
   id: uuidv4(),
   username: 'new_user',
   email: 'new_email@example.com',
-  createdAt: new Date().toISOString(),
+  createdAt: new Date(),
 };
 
 jest.mock('./local-auth.guard', () => ({
@@ -76,7 +69,7 @@ describe('AuthController (e2e)', () => {
   });
 
   it('should register a user', async () => {
-    authService.register.mockResolvedValue(mockCreatedUser as any as User);
+    authService.register.mockResolvedValue(mockCreatedUser as User);
     const response = await request(app.getHttpServer())
       .post('/api/auth/register')
       .send({
