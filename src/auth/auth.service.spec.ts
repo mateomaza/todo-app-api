@@ -66,7 +66,7 @@ describe('AuthService (Unit Tests)', () => {
 
   it('should return a JWT token for a valid login', async () => {
     userService.findOneByUsername.mockResolvedValue(mockCreatedUser as User);
-    jwtService.sign.mockReturnValue('mocked-jwt-token');
+    jwtService.sign.mockReturnValue('mock-jwt-token');
     const loginDto: LoginDto = {
       username: 'new_user',
       password: 'correct_password',
@@ -74,7 +74,7 @@ describe('AuthService (Unit Tests)', () => {
     const result = await authService.login(loginDto);
 
     expect(result).toBeDefined();
-    expect(result.access_token).toEqual('mocked-jwt-token');
+    expect(result.access_token).toEqual('mock-jwt-token');
     expect(result.message).toEqual('Login successful');
   });
   it('should throw an error if login is attempted with a non-existing username', async () => {

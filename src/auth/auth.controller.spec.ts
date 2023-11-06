@@ -41,7 +41,7 @@ describe('AuthController (e2e)', () => {
 
   beforeAll(async () => {
     mongoMemoryServer = await MongoMemoryServer.create();
-    const authServiceMock: Partial<jest.Mocked<AuthService>> = {
+    const mockAuthService: Partial<jest.Mocked<AuthService>> = {
       register: jest.fn(),
       login: jest.fn(),
       isUsernameInUse: jest.fn(),
@@ -60,7 +60,7 @@ describe('AuthController (e2e)', () => {
       ],
     })
       .overrideProvider(AuthService)
-      .useValue(authServiceMock as jest.Mocked<AuthService>)
+      .useValue(mockAuthService as jest.Mocked<AuthService>)
       .compile();
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe());

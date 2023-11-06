@@ -29,6 +29,11 @@ export class TaskController {
     return this.taskService.findById(id);
   }
 
+  @Get('uncompleted')
+  async findUncompleted(): Promise<Task[]> {
+    return this.taskService.findUncompletedTasks();
+  }
+
   @Post()
   async create(@Body() createTaskDto: CreateTaskDto): Promise<Task> {
     return this.taskService.create(createTaskDto);
