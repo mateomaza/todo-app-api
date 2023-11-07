@@ -13,7 +13,7 @@ export class CreateTaskDto {
 
   @IsOptional()
   @IsString({ message: 'Description must be a string' })
-  description: string;
+  description?: string;
 
   @IsNotEmpty()
   @IsBoolean({ message: 'Completed must be a boolean' })

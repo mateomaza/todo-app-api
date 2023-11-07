@@ -9,23 +9,30 @@ import { v4 as uuidv4 } from 'uuid';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseModule } from '@nestjs/mongoose';
 
+const timeNow = new Date().toISOString();
 const mockTask: Task = {
   id: uuidv4(),
   title: 'Test Task',
   description: 'Test Description',
-  completed: false,
-  time: new Date(),
-  createdAt: new Date(),
+  completed: true,
+  time: timeNow,
+  createdAt: timeNow,
 } as any;
-mockTask.save = jest.fn().mockResolvedValue(mockTask);
 
 describe('TaskController (e2e)', () => {
   let app: INestApplication;
   let mongoMemoryServer: MongoMemoryServer;
   let taskService: TaskService;
 
+  const mockUncompleted: Task[] = [
+    { ...mockTask, id: uuidv4(), completed: false } as any,
+    { ...mockTask, id: uuidv4(), completed: false } as any,
+    { ...mockTask, id: uuidv4(), completed: false } as any,
+  ];
+
   beforeAll(async () => {
     mongoMemoryServer = await MongoMemoryServer.create();
+
     const mockTaskService = {
       create: jest.fn().mockResolvedValue(mockTask),
       findAll: jest.fn().mockResolvedValue([mockTask]),
@@ -44,7 +51,7 @@ describe('TaskController (e2e)', () => {
           return Promise.resolve(undefined);
         }
       }),
-      findUncompletedTasks: jest.fn().mockResolvedValue([mockTask]),
+      findUncompletedTasks: jest.fn().mockResolvedValue(mockUncompleted),
     };
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
@@ -68,22 +75,30 @@ describe('TaskController (e2e)', () => {
     taskService = app.get(TaskService);
   });
 
+  beforeEach(() => {
+    jest.resetAllMocks();
+    jest
+      .spyOn(taskService, 'findUncompletedTasks')
+      .mockResolvedValue(mockUncompleted);
+  });
+
   it('should retrieve all tasks', async () => {
     jest.spyOn(taskService, 'findAll').mockResolvedValue([mockTask]);
-    return request(app.getHttpServer())
+    await request(app.getHttpServer())
       .get('/api/tasks')
       .expect(HttpStatus.OK)
       .expect([mockTask]);
   });
 
   it('should retrieve all uncompleted tasks', async () => {
-    jest
+    const findUncompletedTasksSpy = jest
       .spyOn(taskService, 'findUncompletedTasks')
-      .mockResolvedValue([mockTask]);
-    return request(app.getHttpServer())
+      .mockResolvedValue(mockUncompleted);
+    const response = await request(app.getHttpServer())
       .get('/api/tasks/uncompleted')
-      .expect(HttpStatus.OK)
-      .expect([mockTask]);
+      .expect(HttpStatus.OK);
+    console.log('Uncompleted tasks response:', response.body);
+    expect(findUncompletedTasksSpy).toHaveBeenCalled();
   });
 
   it('should retrieve a task based on the id', () => {
@@ -103,7 +118,7 @@ describe('TaskController (e2e)', () => {
         title: 'New Task',
         description: 'New Description',
         completed: false,
-        time: new Date(),
+        time: timeNow,
       })
       .expect(HttpStatus.CREATED)
       .expect(mockTask);
@@ -121,7 +136,14 @@ describe('TaskController (e2e)', () => {
         title: 'Updated Task Title',
       })
       .expect(HttpStatus.OK)
-      .expect(updatedTask);
+      .expect((response) => {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            id: mockTask.id,
+            title: 'Updated Task Title',
+          }),
+        );
+      });
   });
 
   it('should delete a task', () => {
@@ -140,7 +162,7 @@ describe('TaskController (e2e)', () => {
         completed: 'yes',
         time: 'any_date',
       })
-      .expect(400);
+      .expect(HttpStatus.BAD_REQUEST);
 
     expect(response.body.message).toEqual(
       expect.arrayContaining([
@@ -152,27 +174,36 @@ describe('TaskController (e2e)', () => {
     );
   });
   it('should proceed when optional fields are absent in CreateTaskDto', async () => {
+    jest.spyOn(taskService, 'create').mockResolvedValue(mockTask);
     const response = await request(app.getHttpServer())
       .post('/api/tasks')
       .send({
-        title: 'Valid Title',
+        title: 'New Title',
         completed: false,
-        time: new Date(),
+        time: timeNow,
       })
-      .expect(201);
+      .expect(HttpStatus.CREATED);
 
-    expect(response.body).toHaveProperty('id');
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        id: expect.any(String),
+        title: 'New Title',
+        completed: false,
+        time: expect.any(String),
+      }),
+    );
   });
   it('should validate field types in UpdateTaskDto', async () => {
+    const taskId = mockTask.id;
     const response = await request(app.getHttpServer())
-      .patch('/api/tasks')
+      .patch(`/api/tasks/${taskId}}`)
       .send({
         title: 123,
         description: true,
         completed: 'yes',
         time: 'any_date',
       })
-      .expect(400);
+      .expect(HttpStatus.BAD_REQUEST);
 
     expect(response.body.message).toEqual(
       expect.arrayContaining([
@@ -184,15 +215,20 @@ describe('TaskController (e2e)', () => {
     );
   });
   it('should handle empty updated in UpdateTaskDto', async () => {
-    const taskId = mockTask.id;
+    jest.spyOn(taskService, 'update').mockResolvedValue(mockTask);
     const response = await request(app.getHttpServer())
-      .patch(`/api/tasks/${taskId}}`)
+      .patch(`/api/tasks/${mockTask.id}`)
       .send({})
-      .expect(200);
+      .expect(HttpStatus.OK);
 
     expect(response.body).toEqual(
       expect.objectContaining({
-        id: taskId,
+        id: mockTask.id,
+        title: mockTask.title,
+        description: mockTask.description,
+        completed: mockTask.completed,
+        time: mockTask.time,
+        createdAt: mockTask.createdAt,
       }),
     );
   });

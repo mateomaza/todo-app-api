@@ -31,7 +31,9 @@ export class TaskController {
 
   @Get('uncompleted')
   async findUncompleted(): Promise<Task[]> {
-    return this.taskService.findUncompletedTasks();
+    const tasks = await this.taskService.findUncompletedTasks();
+    console.log('Tasks from service:', tasks);
+    return tasks;
   }
 
   @Post()

@@ -1,5 +1,5 @@
 import { Model } from 'mongoose';
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Task } from './task.model';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -32,7 +32,10 @@ export class TaskService {
     return updatedTask;
   }
   async remove(id: string): Promise<void> {
-    await this.taskModel.findByIdAndDelete(id).exec();
+    const result = await this.taskModel.findByIdAndDelete(id).exec();
+    if (!result) {
+      throw new NotFoundException(`Task with ID "${id}" not found`);
+    }
   }
   async findUncompletedTasks(): Promise<Task[]> {
     return this.taskModel.find({ completed: false }).exec();
