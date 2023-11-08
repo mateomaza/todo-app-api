@@ -13,6 +13,7 @@ describe('TaskController (e2e)', () => {
   let app: INestApplication;
   let mongoMemoryServer: MongoMemoryServer;
   let taskService: jest.Mocked<TaskService>;
+  const mockCanActivate = jest.fn();
 
   const mockTask: Partial<Task> = {
     id: uuidv4(),
@@ -63,7 +64,7 @@ describe('TaskController (e2e)', () => {
       ],
     })
       .overrideGuard(JwtAuthGuard)
-      .useValue({ canActivate: jest.fn(() => true) })
+      .useValue({ canActivate: mockCanActivate })
       .overrideProvider(TaskService)
       .useValue(mockTaskService as jest.Mocked<TaskService>)
       .compile();
@@ -72,6 +73,17 @@ describe('TaskController (e2e)', () => {
     app.useGlobalPipes(new ValidationPipe());
     taskService = app.get(TaskService);
     await app.init();
+  });
+
+  beforeEach(() => {
+    mockCanActivate.mockImplementation(() => true);
+  });
+
+  it('should deny access without token', async () => {
+    mockCanActivate.mockImplementation(() => false);
+    await request(app.getHttpServer())
+      .get('/api/tasks')
+      .expect(HttpStatus.FORBIDDEN);
   });
 
   it('should retrieve all tasks', async () => {
