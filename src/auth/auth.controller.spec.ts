@@ -62,10 +62,11 @@ describe('AuthController (e2e)', () => {
       .overrideProvider(AuthService)
       .useValue(mockAuthService as jest.Mocked<AuthService>)
       .compile();
+
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe());
-    await app.init();
     authService = app.get(AuthService);
+    await app.init();
   });
 
   it('should register a user', async () => {
@@ -209,6 +210,7 @@ describe('AuthController (e2e)', () => {
 
     expect(response.body.message).toBe('Invalid credentials');
   });
+
   it('should reject login attempts with no password input', async () => {
     authService.login.mockRejectedValue(
       new BadRequestException(['password should not be empty']),
@@ -223,6 +225,7 @@ describe('AuthController (e2e)', () => {
       'password should not be empty',
     ]);
   });
+
   it('should reject login attempts with no username input', async () => {
     authService.login.mockRejectedValue(
       new BadRequestException(['username should not be empty']),
@@ -237,6 +240,7 @@ describe('AuthController (e2e)', () => {
       'username should not be empty',
     ]);
   });
+
   afterAll(async () => {
     await app.close();
     await mongoMemoryServer.stop();

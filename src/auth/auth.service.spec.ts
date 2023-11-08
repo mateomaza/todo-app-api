@@ -6,17 +6,17 @@ import { LoginDto } from './dto/login.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from './user/user.model';
 
-const mockCreatedUser: Partial<User> = {
-  id: uuidv4(),
-  username: 'new_user',
-  email: 'new_email@example.com',
-  createdAt: new Date(),
-};
-
 describe('AuthService (Unit Tests)', () => {
   let authService: AuthService;
   let userService: jest.Mocked<UserService>;
   let jwtService: jest.Mocked<JwtService>;
+
+  const mockCreatedUser: Partial<User> = {
+    id: uuidv4(),
+    username: 'new_user',
+    email: 'new_email@example.com',
+    createdAt: new Date(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -44,10 +44,6 @@ describe('AuthService (Unit Tests)', () => {
     jwtService = module.get(JwtService);
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('should successfully register a new user', async () => {
     userService.create.mockResolvedValue(mockCreatedUser as User);
     const newUser = await authService.register({
@@ -72,11 +68,11 @@ describe('AuthService (Unit Tests)', () => {
       password: 'correct_password',
     };
     const result = await authService.login(loginDto);
-
     expect(result).toBeDefined();
     expect(result.access_token).toEqual('mock-jwt-token');
     expect(result.message).toEqual('Login successful');
   });
+
   it('should throw an error if login is attempted with a non-existing username', async () => {
     userService.findOneByUsername.mockResolvedValue(null);
     const loginDto: LoginDto = {
@@ -85,6 +81,7 @@ describe('AuthService (Unit Tests)', () => {
     };
     await expect(authService.login(loginDto)).rejects.toThrow();
   });
+
   it('should check if username is not in use', async () => {
     const usernameInUse = await authService.isUsernameInUse('nonexistent');
     expect(userService.findOneByUsername).toHaveBeenCalledWith('nonexistent');
@@ -117,5 +114,9 @@ describe('AuthService (Unit Tests)', () => {
       'existent@example.com',
     );
     expect(emailInUse).toBeTruthy();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 });

@@ -12,8 +12,7 @@ export class TaskService {
   ) {}
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
-    const newTask = new this.taskModel(createTaskDto);
-    return newTask.save();
+    return this.taskModel.create(createTaskDto);
   }
   async findAll(): Promise<Task[]> {
     return this.taskModel.find().exec();
