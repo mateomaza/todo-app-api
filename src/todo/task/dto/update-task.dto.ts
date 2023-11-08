@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsBoolean, IsDate } from 'class-validator';
+import { IsOptional, IsString, IsBoolean } from 'class-validator';
 
 export class UpdateTaskDto {
   @IsOptional()
@@ -14,6 +14,6 @@ export class UpdateTaskDto {
   completed?: boolean;
 
   @IsOptional()
-  @IsDate({ message: 'Time must be a valid date' })
-  time?: Date;
+  @IsString({ message: 'Time must be an ISO date string' })
+  time?: string;
 }

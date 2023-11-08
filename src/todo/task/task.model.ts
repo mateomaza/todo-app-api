@@ -10,14 +10,14 @@ export class Task extends Document {
   @Prop()
   title: string;
 
-  @Prop()
-  description: string;
+  @Prop({ required: false })
+  description?: string;
 
   @Prop()
   completed: boolean;
 
-  @Prop({ default: new Date(Date.now() + 60 * 60 * 1000) })
-  time: Date;
+  @Prop({ default: new Date(Date.now() + 60 * 60 * 1000).toISOString() })
+  time: string;
 
   @Prop({ default: Date.now })
   createdAt: Date;

@@ -10,7 +10,6 @@ export class TaskService {
   constructor(
     @InjectModel(Task.name) private readonly taskModel: Model<Task>,
   ) {}
-  private tasks: Task[] = [];
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
     const newTask = new this.taskModel(createTaskDto);
@@ -34,7 +33,7 @@ export class TaskService {
   async remove(id: string): Promise<void> {
     const result = await this.taskModel.findByIdAndDelete(id).exec();
     if (!result) {
-      throw new NotFoundException(`Task with ID "${id}" not found`);
+      throw new NotFoundException(`Task with ID '${id}' not found`);
     }
   }
   async findUncompletedTasks(): Promise<Task[]> {

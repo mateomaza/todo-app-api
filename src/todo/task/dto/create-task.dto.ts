@@ -1,10 +1,4 @@
-import {
-  IsString,
-  IsBoolean,
-  IsDate,
-  IsNotEmpty,
-  IsOptional,
-} from 'class-validator';
+import { IsString, IsBoolean, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class CreateTaskDto {
   @IsNotEmpty()
@@ -20,6 +14,6 @@ export class CreateTaskDto {
   completed: boolean;
 
   @IsNotEmpty()
-  @IsDate({ message: 'Time must be a valid date' })
-  time: Date;
+  @IsString({ message: 'Time must be an ISO date string' })
+  time: string;
 }
