@@ -8,7 +8,6 @@ import {
   NotFoundException,
   UnauthorizedException,
   ExecutionContext,
-  BadRequestException,
 } from '@nestjs/common';
 import { AuthModule } from './auth.module';
 import { User, UserSchema } from './user/user.model';
@@ -120,52 +119,6 @@ describe('AuthController (e2e)', () => {
     });
   });
 
-  it('should handle no password input during registration', async () => {
-    authService.login.mockRejectedValue(
-      new BadRequestException(['password should not be empty']),
-    );
-    const response = await request(app.getHttpServer())
-      .post('/api/auth/register')
-      .send({
-        username: mockCreatedUser.username,
-        email: mockCreatedUser.email,
-      })
-      .expect(HttpStatus.BAD_REQUEST);
-    expect(response.body.message).toStrictEqual([
-      'password should not be empty',
-    ]);
-  });
-
-  it('should handle no username input during registration', async () => {
-    authService.login.mockRejectedValue(
-      new BadRequestException(['username should not be empty']),
-    );
-    const response = await request(app.getHttpServer())
-      .post('/api/auth/register')
-      .send({
-        email: mockCreatedUser.email,
-        password: 'password',
-      })
-      .expect(HttpStatus.BAD_REQUEST);
-    expect(response.body.message).toStrictEqual([
-      'username should not be empty',
-    ]);
-  });
-
-  it('should handle no email input during registration', async () => {
-    authService.login.mockRejectedValue(
-      new BadRequestException(['email should not be empty']),
-    );
-    const response = await request(app.getHttpServer())
-      .post('/api/auth/register')
-      .send({
-        username: mockCreatedUser.username,
-        password: 'password',
-      })
-      .expect(HttpStatus.BAD_REQUEST);
-    expect(response.body.message).toStrictEqual(['email should not be empty']);
-  });
-
   it('should handle successful login attempts', async () => {
     authService.login.mockResolvedValue({
       message: 'Login successful',
@@ -211,34 +164,37 @@ describe('AuthController (e2e)', () => {
     expect(response.body.message).toBe('Invalid credentials');
   });
 
-  it('should reject login attempts with no password input', async () => {
-    authService.login.mockRejectedValue(
-      new BadRequestException(['password should not be empty']),
-    );
+  it('should validate field types in RegisterDto', async () => {
     const response = await request(app.getHttpServer())
-      .post('/api/auth/login')
+      .post('/api/auth/register')
       .send({
-        username: mockCreatedUser.username,
+        username: 123,
+        password: true,
+        email: true,
       })
       .expect(HttpStatus.BAD_REQUEST);
-    expect(response.body.message).toStrictEqual([
-      'password should not be empty',
-    ]);
+    expect(response.body.message).toEqual(
+      expect.arrayContaining([
+        'Username must be a string',
+        'Password must be a string',
+        'Email must be a string',
+      ]),
+    );
   });
-
-  it('should reject login attempts with no username input', async () => {
-    authService.login.mockRejectedValue(
-      new BadRequestException(['username should not be empty']),
-    );
+  it('should validate field types in LoginDto', async () => {
     const response = await request(app.getHttpServer())
       .post('/api/auth/login')
       .send({
-        password: 'password',
+        username: 123,
+        password: true,
       })
       .expect(HttpStatus.BAD_REQUEST);
-    expect(response.body.message).toStrictEqual([
-      'username should not be empty',
-    ]);
+    expect(response.body.message).toEqual(
+      expect.arrayContaining([
+        'Username must be a string',
+        'Password must be a string',
+      ]),
+    );
   });
 
   afterAll(async () => {
