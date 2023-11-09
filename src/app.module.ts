@@ -7,20 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { TaskModule } from './todo/task/task.module';
 import { AuthController } from './auth/auth.controller';
 import { TaskController } from './todo/task/task.controller';
-import { config } from 'dotenv';
-import * as fs from 'fs';
-import * as crypto from 'crypto';
-config();
 
-const secretKeyVariable = 'JWT_SECRET_KEY';
-const secretKey = process.env[secretKeyVariable];
-if (!secretKey) {
-  const newSecretKey = crypto.randomBytes(64).toString('hex');
-  process.env[secretKeyVariable] = newSecretKey;
-  fs.writeFileSync('.env', `${secretKeyVariable}=${newSecretKey}\n`, {
-    flag: 'a',
-  });
-}
 @Module({
   imports: [
     MongooseModule.forRoot(process.env.MONGO_URI),

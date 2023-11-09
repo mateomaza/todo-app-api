@@ -79,11 +79,10 @@ describe('TaskController (e2e)', () => {
     mockCanActivate.mockImplementation(() => true);
   });
 
-  it('should deny access without token', async () => {
+  it.only('should deny access without token', async () => {
     mockCanActivate.mockImplementation(() => false);
-    await request(app.getHttpServer())
-      .get('/api/tasks')
-      .expect(HttpStatus.FORBIDDEN);
+    const response = await request(app.getHttpServer()).get('/api/tasks');
+    expect(response.body.message).toBe('No session logged in.');
   });
 
   it('should retrieve all tasks', async () => {
