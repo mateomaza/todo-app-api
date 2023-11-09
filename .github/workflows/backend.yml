@@ -10,16 +10,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Check Out Repository
-      uses: actions/checkout@v2
+      - name: Check Out Repository
+        uses: actions/checkout@v2
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: 16
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18
 
-    - name: Install Dependencies
-      run: npm install
+        env:
+          MONGO_URI: ${{secrets.MONGO_URI}}
+          JWT_SECRET_KEY: ${{secrets.JWT_SECRET_KEY}}
 
-    - name: Run Tests
-      run: npm run test
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Tests
+        run: npm run test

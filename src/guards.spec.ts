@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, HttpStatus } from '@nestjs/common';
 import request from 'supertest';
 import { TaskModule } from './todo/task/task.module';
 import { Task, TaskSchema } from './todo/task/task.model';
@@ -11,6 +11,7 @@ describe('Guard Integration', () => {
   let mongoMemoryServer: MongoMemoryServer;
 
   beforeAll(async () => {
+    process.env.JWT_SECRET_KEY = 'test-key';
     mongoMemoryServer = await MongoMemoryServer.create();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
@@ -29,7 +30,10 @@ describe('Guard Integration', () => {
   });
 
   it('should deny access without a valid jwt token', async () => {
-    await request(app.getHttpServer()).get('/api/tasks').expect(401);
+    const response = await request(app.getHttpServer())
+      .get('/api/tasks')
+      .expect(HttpStatus.UNAUTHORIZED);
+    expect(response.body.message).toBe('No auth token');
   });
 
   afterAll(async () => {

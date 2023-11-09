@@ -11,9 +11,10 @@ export class LocalAuthGuard extends AuthGuard('local') {
   canActivate(context: ExecutionContext) {
     return super.canActivate(context);
   }
-  handleRequest(err: Error, user: any, context: ExecutionContext) {
+  handleRequest(err: any, user: any, info: any, context: ExecutionContext) {
     if (err || !user) {
-      throw new UnauthorizedException('Invalid credentials');
+      console.log(info?.message);
+      throw err || new UnauthorizedException(info?.message);
     }
     const request = context.switchToHttp().getRequest<Request>();
     request.user = user;

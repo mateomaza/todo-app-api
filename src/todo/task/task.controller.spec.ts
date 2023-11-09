@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TaskModule } from './task.module';
-import { JwtAuthGuard } from 'src/auth/jwt.auth.guard';
 import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { TaskService } from './task.service';
@@ -8,12 +7,12 @@ import { Task, TaskSchema } from './task.model';
 import { v4 as uuidv4 } from 'uuid';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseModule } from '@nestjs/mongoose';
+import { JwtAuthGuard } from 'src/auth/jwt.auth.guard';
 
 describe('TaskController (e2e)', () => {
   let app: INestApplication;
   let mongoMemoryServer: MongoMemoryServer;
   let taskService: jest.Mocked<TaskService>;
-  const mockCanActivate = jest.fn();
 
   const mockTask: Partial<Task> = {
     id: uuidv4(),
@@ -32,6 +31,7 @@ describe('TaskController (e2e)', () => {
 
   beforeAll(async () => {
     mongoMemoryServer = await MongoMemoryServer.create();
+    process.env.JWT_SECRET_KEY = 'test-key';
     const mockTaskService: Partial<jest.Mocked<TaskService>> = {
       create: jest.fn(),
       findAll: jest.fn(),
@@ -64,7 +64,7 @@ describe('TaskController (e2e)', () => {
       ],
     })
       .overrideGuard(JwtAuthGuard)
-      .useValue({ canActivate: mockCanActivate })
+      .useValue({ canActivate: true })
       .overrideProvider(TaskService)
       .useValue(mockTaskService as jest.Mocked<TaskService>)
       .compile();
@@ -73,16 +73,6 @@ describe('TaskController (e2e)', () => {
     app.useGlobalPipes(new ValidationPipe());
     taskService = app.get(TaskService);
     await app.init();
-  });
-
-  beforeEach(() => {
-    mockCanActivate.mockImplementation(() => true);
-  });
-
-  it.only('should deny access without token', async () => {
-    mockCanActivate.mockImplementation(() => false);
-    const response = await request(app.getHttpServer()).get('/api/tasks');
-    expect(response.body.message).toBe('No session logged in.');
   });
 
   it('should retrieve all tasks', async () => {
@@ -207,7 +197,6 @@ describe('TaskController (e2e)', () => {
 
   it('should proceed when optional fields (description) are absent in CreateTaskDto', async () => {
     taskService.create.mockResolvedValue(mockTask as Task);
-    //jest.spyOn(taskService, 'create').mockResolvedValue(mockTask as Task);
     const response = await request(app.getHttpServer())
       .post('/api/tasks/create')
       .send({

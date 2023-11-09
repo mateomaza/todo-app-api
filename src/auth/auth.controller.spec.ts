@@ -41,6 +41,7 @@ describe('AuthController (e2e)', () => {
 
   beforeAll(async () => {
     mongoMemoryServer = await MongoMemoryServer.create();
+    process.env.JWT_SECRET_KEY = 'test-key';
     const mockAuthService: Partial<jest.Mocked<AuthService>> = {
       register: jest.fn(),
       login: jest.fn(),
@@ -207,7 +208,6 @@ describe('AuthController (e2e)', () => {
         password: 'password',
       })
       .expect(HttpStatus.NOT_FOUND);
-
     expect(response.body.message).toBe('Invalid credentials');
   });
 
