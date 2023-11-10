@@ -13,5 +13,6 @@ import { AuthModule } from 'src/auth/auth.module';
   ],
   controllers: [TaskController],
   providers: [TaskService],
+  exports: [TaskService],
 })
 export class TaskModule {}

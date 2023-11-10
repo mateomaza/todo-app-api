@@ -7,6 +7,8 @@ import { AuthModule } from './auth/auth.module';
 import { TaskModule } from './todo/task/task.module';
 import { AuthController } from './auth/auth.controller';
 import { TaskController } from './todo/task/task.controller';
+import { config } from 'dotenv';
+config();
 
 @Module({
   imports: [
