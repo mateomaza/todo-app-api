@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Body,
   UseGuards,
@@ -13,6 +14,7 @@ import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './local-auth.guard';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { JwtAuthGuard } from './jwt.auth.guard';
 
 @Controller('api/auth')
 export class AuthController {
@@ -48,5 +50,12 @@ export class AuthController {
         access_token: result.access_token,
       };
     }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('verifyToken')
+  @HttpCode(HttpStatus.OK)
+  verifyToken(@Req() req: Request) {
+    return { username: req.user.username, verified: true };
   }
 }
