@@ -81,13 +81,13 @@ export class AuthController {
   @Post('refresh')
   async refresh(@Req() req: Request) {
     const refresh_token = req.cookies['refresh_token'];
-    const user = await this.verifyRefreshToken(refresh_token);
+    const user = await this.authService.verifyRefreshToken(refresh_token);
     if (!user) {
       throw new UnauthorizedException();
     }
     const new_access_token = this.jwtService.sign({
       username: user.username,
-      sub: user.userId,
+      sub: user.id,
     });
     return { access_token: new_access_token };
   }
@@ -100,9 +100,13 @@ export class AuthController {
   }
 
   @Post('logout')
+  @HttpCode(HttpStatus.OK)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refresh_token = req.cookies['refresh_token'];
-    await this.authService.invalidateRefreshToken(refresh_token);
-    res.clearCookie('refresh_token');
+    if (refresh_token) {
+      await this.authService.invalidateToken(refresh_token);
+      res.clearCookie('refresh_token');
+    }
+    return { message: 'Logged out successfully' };
   }
 }

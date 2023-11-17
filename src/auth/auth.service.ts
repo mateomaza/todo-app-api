@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { User } from './user/user.model';
 import { UserService } from './user/user.service';
 import { JwtService } from '@nestjs/jwt';
@@ -63,15 +63,36 @@ export class AuthService {
         }
       : null;
   }
-  async verifyRefreshToken(refreshToken: string): Promise<User | null> {
+  async verifyRefreshToken(refresh_token: string): Promise<User | null> {
+    const isBlocked = await this.redisClient.get(`blocklist:${refresh_token}`);
+    if (isBlocked) {
+      throw new UnauthorizedException('Token has been revoked');
+    }
     try {
-      const payload = this.jwtService.verify(refreshToken, {
-        secret: 'refreshTokenSecret',
-      });
-      const user = await this.userService.findByUsername(payload.sub);
+      const payload = this.jwtService.verify(refresh_token);
+      const user = await this.userService.findOneByUsername(payload.username);
       return user;
     } catch (error) {
       return null;
+    }
+  }
+
+  async invalidateToken(refresh_token: string): Promise<void> {
+    try {
+      const payload = this.jwtService.verify(refresh_token);
+      const expirationTime = payload.exp;
+      const currentTime = Math.floor(Date.now() / 1000);
+      const remainingTime = expirationTime - currentTime;
+
+      if (remainingTime > 0) {
+        await this.redisClient.setex(
+          `blocklist:${refresh_token}`,
+          remainingTime,
+          'blocked',
+        );
+      }
+    } catch (error) {
+      throw new UnauthorizedException('Invalid token');
     }
   }
 }
