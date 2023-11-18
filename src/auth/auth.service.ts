@@ -27,9 +27,22 @@ export class AuthService {
     const refresh_token = this.jwtService.sign(payload, { expiresIn: '7d' });
     return { message: 'Login successful', access_token, refresh_token };
   }
-  async register(user: Partial<User>): Promise<User> {
+  async register(user: Partial<User>): Promise<{
+    message: string;
+    newUser: User;
+    access_token: string;
+    refresh_token: string;
+  }> {
     const newUser = await this.userService.create(user);
-    return newUser;
+    const payload = { username: newUser.username, sub: newUser.id };
+    const access_token = this.jwtService.sign(payload, { expiresIn: '15m' });
+    const refresh_token = this.jwtService.sign(payload, { expiresIn: '7d' });
+    return {
+      message: 'Registration successful',
+      newUser,
+      access_token,
+      refresh_token,
+    };
   }
   async isUsernameInUse(username: string): Promise<boolean> {
     const existingUser = await this.userService.findOneByUsername(username);

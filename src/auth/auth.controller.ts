@@ -4,7 +4,6 @@ import {
   Post,
   Body,
   UseGuards,
-  HttpException,
   HttpStatus,
   Req,
   Res,
@@ -27,21 +26,35 @@ export class AuthController {
   ) {}
 
   @Post('register')
-  async register(@Body() registerDto: RegisterDto) {
-    const usernameInUse = await this.authService.isUsernameInUse(
-      registerDto.username,
-    );
-    const emailInUse = await this.authService.isEmailInUse(registerDto.email);
-    if (usernameInUse) {
-      throw new HttpException(
-        'Username is already registered',
-        HttpStatus.CONFLICT,
+  async register(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Body() registerDto: RegisterDto,
+  ) {
+    const result = await this.authService.register(registerDto);
+    if (result.newUser) {
+      const user_id = result.newUser.id;
+      const user_ip = req.ip;
+      const user_agent = req.headers['user-agent'];
+      const ttl = 803;
+      await this.authService.storeTokenDetails(
+        user_id,
+        user_ip,
+        user_agent,
+        ttl,
       );
+      res.cookie('refresh_token', result.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+      return {
+        message: result.message,
+        user: result.newUser,
+        access_token: result.access_token,
+      };
     }
-    if (emailInUse) {
-      throw new HttpException('Email is already in use', HttpStatus.CONFLICT);
-    }
-    return this.authService.register(registerDto);
   }
 
   @UseGuards(LocalAuthGuard)
@@ -57,7 +70,7 @@ export class AuthController {
       const user_id = req.user.id;
       const user_ip = req.ip;
       const user_agent = req.headers['user-agent'];
-      const ttl = 3600;
+      const ttl = 803;
       await this.authService.storeTokenDetails(
         user_id,
         user_ip,
