@@ -95,8 +95,17 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('verifyToken')
   @HttpCode(HttpStatus.OK)
-  verifyToken(@Req() req: Request) {
-    return { username: req.user.username, verified: true };
+  async verifyToken(@Req() req: Request) {
+    const user = req.user;
+    const request_ip = req.ip;
+    const user_agent = req.headers['user-agent'];
+    const details = await this.authService.getTokenDetails(user.id);
+    const ipMatches = request_ip === details?.stored_ip;
+    const userAgentMatches = user_agent === details?.stored_user_agent;
+    return {
+      username: user.username,
+      verified: ipMatches && userAgentMatches,
+    };
   }
 
   @Post('logout')

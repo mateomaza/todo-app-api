@@ -51,11 +51,10 @@ export class AuthService {
 
     await this.redisClient.setex(key, ttl, stringValue);
   }
-  async getStoredTokenDetails(user_id: string): Promise<any> {
+  async getTokenDetails(user_id: string): Promise<any> {
     const key = `token_details:${user_id}`;
     const storedDetailsString = await this.redisClient.get(key);
     const storedDetails = JSON.parse(storedDetailsString);
-
     return storedDetails
       ? {
           stored_ip: storedDetails.ip,
@@ -76,7 +75,6 @@ export class AuthService {
       return null;
     }
   }
-
   async invalidateToken(refresh_token: string): Promise<void> {
     try {
       const payload = this.jwtService.verify(refresh_token);

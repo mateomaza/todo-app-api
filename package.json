@@ -44,7 +44,8 @@
     "passport-local-mongoose": "^8.0.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "xss": "^1.0.14"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.2.0",
