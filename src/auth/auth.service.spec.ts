@@ -1,15 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { UnauthorizedException } from '@nestjs/common/exceptions';
 import { AuthService } from './auth.service';
 import { UserService } from './user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from './user/user.model';
+import { RedisService } from 'nestjs-redis';
+import { Redis } from 'ioredis';
 
 describe('AuthService (Unit Tests)', () => {
   let authService: AuthService;
   let userService: jest.Mocked<UserService>;
   let jwtService: jest.Mocked<JwtService>;
+  let mockRedisClient: jest.Mocked<Redis>;
 
   const mockCreatedUser: Partial<User> = {
     id: uuidv4(),
@@ -19,6 +23,10 @@ describe('AuthService (Unit Tests)', () => {
   };
 
   beforeEach(async () => {
+    mockRedisClient = {
+      get: jest.fn(),
+      setex: jest.fn(),
+    } as any;
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -34,7 +42,12 @@ describe('AuthService (Unit Tests)', () => {
           provide: JwtService,
           useValue: {
             sign: jest.fn(),
+            verify: jest.fn(),
           },
+        },
+        {
+          provide: RedisService,
+          useValue: { getClient: () => mockRedisClient },
         },
       ],
     }).compile();
@@ -44,33 +57,62 @@ describe('AuthService (Unit Tests)', () => {
     jwtService = module.get(JwtService);
   });
 
-  it('should successfully register a new user', async () => {
+  it.only('should successfully register a new user and return token details', async () => {
     userService.create.mockResolvedValue(mockCreatedUser as User);
-    const newUser = await authService.register({
+    jwtService.sign.mockReturnValueOnce('mock-access-token');
+    jwtService.sign.mockReturnValueOnce('mock-refresh-token');
+    const result = await authService.register({
       username: 'new_user',
       email: 'new_email@example.com',
       password: 'new_password',
     });
-    expect(newUser).toBeDefined();
-    expect(newUser.username).toEqual('new_user');
+    expect(result).toBeDefined();
+    expect(result.newUser).toBeDefined();
+    expect(result.newUser.username).toEqual('new_user');
+    expect(result.access_token).toEqual('mock-access-token');
+    expect(result.refresh_token).toEqual('mock-refresh-token');
+    expect(result.message).toEqual('Registration successful');
     expect(userService.create).toHaveBeenCalledWith({
       username: 'new_user',
       email: 'new_email@example.com',
       password: 'new_password',
     });
+    expect(jwtService.sign).toHaveBeenCalledWith(
+      { username: 'new_user', sub: mockCreatedUser.id },
+      { expiresIn: '15m' },
+    );
+    expect(jwtService.sign).toHaveBeenCalledWith(
+      { username: 'new_user', sub: mockCreatedUser.id },
+      { expiresIn: '7d' },
+    );
   });
 
-  it('should return a JWT token for a valid login', async () => {
-    userService.findOneByUsername.mockResolvedValue(mockCreatedUser as User);
-    jwtService.sign.mockReturnValue('mock-jwt-token');
+  it.only('should return a JWT access token and refresh token for a valid login', async () => {
+    const mockUser = mockCreatedUser as User;
+    userService.findOneByUsername.mockResolvedValue(mockUser);
+    jwtService.sign.mockReturnValueOnce('mock-access-token');
+    jwtService.sign.mockReturnValueOnce('mock-refresh-token');
+
     const loginDto: LoginDto = {
       username: 'new_user',
       password: 'correct_password',
     };
+
     const result = await authService.login(loginDto);
+
     expect(result).toBeDefined();
-    expect(result.access_token).toEqual('mock-jwt-token');
     expect(result.message).toEqual('Login successful');
+    expect(result.access_token).toEqual('mock-access-token');
+    expect(result.refresh_token).toEqual('mock-refresh-token');
+    expect(userService.findOneByUsername).toHaveBeenCalledWith('new_user');
+    expect(jwtService.sign).toHaveBeenCalledWith(
+      { username: mockUser.username, sub: mockUser.id },
+      { expiresIn: '15m' },
+    );
+    expect(jwtService.sign).toHaveBeenCalledWith(
+      { username: mockUser.username, sub: mockUser.id },
+      { expiresIn: '7d' },
+    );
   });
 
   it('should throw an error if login is attempted with a non-existing username', async () => {
@@ -114,6 +156,54 @@ describe('AuthService (Unit Tests)', () => {
       'existent@example.com',
     );
     expect(emailInUse).toBeTruthy();
+  });
+
+  it.only('should store and retrieve token details in the cache', async () => {
+    const user_id = 'user123';
+    const ip = '192.168.1.1';
+    const user_agent = 'test-agent';
+    const ttl = 3600;
+    await authService.storeTokenDetails(user_id, ip, user_agent, ttl);
+    expect(mockRedisClient.setex).toHaveBeenCalledWith(
+      `token_details:${user_id}`,
+      ttl,
+      JSON.stringify({ ip, user_agent }),
+    );
+    mockRedisClient.get.mockResolvedValue(JSON.stringify({ ip, user_agent }));
+    const retrievedDetails = await authService.getTokenDetails(user_id);
+    expect(mockRedisClient.get).toHaveBeenCalledWith(
+      `token_details:${user_id}`,
+    );
+    expect(retrievedDetails).toEqual({
+      stored_ip: ip,
+      stored_user_agent: user_agent,
+    });
+  });
+
+  it.only('should identify a revoked refresh token', async () => {
+    const refresh_token = 'revokedToken123';
+    mockRedisClient.get.mockResolvedValue('blocked');
+    await expect(authService.verifyRefreshToken(refresh_token)).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(mockRedisClient.get).toHaveBeenCalledWith(
+      `blocklist:${refresh_token}`,
+    );
+  });
+
+  it.only('should invalidate a refresh token and add it to the blocklist', async () => {
+    const refresh_token = 'validToken123';
+    const payload = {
+      username: 'user123',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    };
+    jwtService.verify.mockReturnValue(payload);
+    await authService.invalidateToken(refresh_token);
+    expect(mockRedisClient.setex).toHaveBeenCalledWith(
+      `blocklist:${refresh_token}`,
+      expect.any(Number),
+      'blocked',
+    );
   });
 
   afterEach(() => {
