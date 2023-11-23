@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { RedisService } from 'src/redis.service';
+import { Redis } from 'ioredis';
 import { AuthService } from './auth.service';
+import { JwtService } from '@nestjs/jwt';
+import { JwtAuthGuard } from './jwt.auth.guard';
 import request from 'supertest';
 import {
   HttpStatus,
@@ -37,6 +41,8 @@ describe('AuthController (e2e)', () => {
   let app: INestApplication;
   let mongoMemoryServer: MongoMemoryServer;
   let authService: jest.Mocked<AuthService>;
+  let jwtService: jest.Mocked<JwtService>;
+  let mockRedisService: jest.Mocked<Redis>;
 
   beforeAll(async () => {
     mongoMemoryServer = await MongoMemoryServer.create();
@@ -46,7 +52,16 @@ describe('AuthController (e2e)', () => {
       login: jest.fn(),
       isUsernameInUse: jest.fn(),
       isEmailInUse: jest.fn(),
+      storeTokenDetails: jest.fn(),
+      getTokenDetails: jest.fn(),
+      verifyRefreshToken: jest.fn(),
+      invalidateToken: jest.fn(),
     };
+    mockRedisService = {
+      get: jest.fn(),
+      setex: jest.fn(),
+      getClient: jest.fn(),
+    } as any;
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
         MongooseModule.forRootAsync({
@@ -58,33 +73,54 @@ describe('AuthController (e2e)', () => {
         AuthModule,
         UserModule,
       ],
+      providers: [
+        {
+          provide: JwtService,
+          useValue: {
+            sign: jest.fn(),
+            verify: jest.fn(),
+          },
+        },
+        {
+          provide: RedisService,
+          useValue: mockRedisService,
+        },
+      ],
     })
       .overrideProvider(AuthService)
       .useValue(mockAuthService as jest.Mocked<AuthService>)
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: true })
       .compile();
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe());
     authService = app.get(AuthService);
+    jwtService = app.get(JwtService);
     await app.init();
   });
 
-  it('should register a user', async () => {
-    authService.register.mockResolvedValue(mockCreatedUser as User);
+  it('should register a user and set refresh_token in cookies', async () => {
+    authService.register.mockResolvedValue({
+      message: 'Registration successful',
+      newUser: mockCreatedUser as User,
+      access_token: 'mock-access-token',
+      refresh_token: 'mock-refresh-token',
+    });
+
     const response = await request(app.getHttpServer())
       .post('/api/auth/register')
       .send({
         username: mockCreatedUser.username,
         email: mockCreatedUser.email,
-        password: 'password',
+        password: 'correct_password',
       })
       .expect(HttpStatus.CREATED);
-    expect(response.body).toEqual({
-      id: mockCreatedUser.id,
-      username: mockCreatedUser.username,
-      email: mockCreatedUser.email,
-      createdAt: expect.any(String),
-    });
+
+    expect(response.body.message).toBe('Registration successful');
+    expect(response.headers['set-cookie']).toContainEqual(
+      expect.stringContaining('refresh_token=mock-refresh-token'),
+    );
   });
 
   it('should handle existing username during registration', async () => {
@@ -119,11 +155,13 @@ describe('AuthController (e2e)', () => {
     });
   });
 
-  it('should handle successful login attempts', async () => {
+  it('should handle successful login attempts and set refresh_token in cookies', async () => {
     authService.login.mockResolvedValue({
       message: 'Login successful',
       access_token: 'mock-jwt-token',
+      refresh_token: 'mock-refresh-token',
     });
+
     const response = await request(app.getHttpServer())
       .post('/api/auth/login')
       .send({
@@ -131,9 +169,11 @@ describe('AuthController (e2e)', () => {
         password: 'password',
       })
       .expect(HttpStatus.OK);
+
     expect(response.body.message).toBe('Login successful');
-    expect(response.body.user).toBeDefined();
-    expect(response.body.access_token).toBeDefined();
+    expect(response.headers['set-cookie']).toContainEqual(
+      expect.stringContaining('refresh_token=mock-refresh-token'),
+    );
   });
 
   it('should reject login attempts with incorrect password', async () => {
@@ -164,6 +204,46 @@ describe('AuthController (e2e)', () => {
     expect(response.body.message).toBe('Invalid credentials');
   });
 
+  it('should logout user, clear refresh token cookie, and invalidate the token', async () => {
+    const mockRefreshToken = 'mock-refresh-token';
+    authService.invalidateToken.mockResolvedValue();
+    const response = await request(app.getHttpServer())
+      .post('/api/auth/logout')
+      .set('Cookie', [`refresh_token=${mockRefreshToken}`])
+      .expect(HttpStatus.OK);
+
+    expect(response.body.message).toBe('Logged out successfully');
+    expect(response.headers['set-cookie']).toContainEqual(
+      expect.stringContaining('refresh_token=;'),
+    );
+    expect(authService.invalidateToken).toHaveBeenCalledWith(mockRefreshToken);
+  });
+
+  it('should verify token and return user details', async () => {
+    authService.getTokenDetails.mockResolvedValue({
+      stored_ip: 'mock-ip',
+      stored_user_agent: 'mock-user-agent',
+    });
+    const response = await request(app.getHttpServer())
+      .get('/api/auth/verifyToken')
+      .expect(HttpStatus.OK);
+    expect(response.body).toEqual({
+      username: mockCreatedUser.username,
+      verified: true,
+    });
+  });
+
+  it('should refresh access token', async () => {
+    authService.verifyRefreshToken.mockResolvedValue(mockCreatedUser as User);
+    jwtService.sign.mockReturnValueOnce('new-mock-access-token');
+    const response = await request(app.getHttpServer())
+      .post('/api/auth/refresh')
+      .set('Cookie', ['refresh_token=mock-refresh-token'])
+      .expect(HttpStatus.OK);
+
+    expect(response.body.access_token).toBe('new-mock-access-token');
+  });
+
   it('should validate field types in RegisterDto', async () => {
     const response = await request(app.getHttpServer())
       .post('/api/auth/register')
@@ -181,6 +261,7 @@ describe('AuthController (e2e)', () => {
       ]),
     );
   });
+
   it('should validate field types in LoginDto', async () => {
     const response = await request(app.getHttpServer())
       .post('/api/auth/login')

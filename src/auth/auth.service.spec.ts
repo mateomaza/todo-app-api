@@ -6,14 +6,14 @@ import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from './user/user.model';
-import { RedisService } from 'nestjs-redis';
+import { RedisService } from 'src/redis.service';
 import { Redis } from 'ioredis';
 
 describe('AuthService (Unit Tests)', () => {
   let authService: AuthService;
   let userService: jest.Mocked<UserService>;
   let jwtService: jest.Mocked<JwtService>;
-  let mockRedisClient: jest.Mocked<Redis>;
+  let mockRedisService: jest.Mocked<Redis>;
 
   const mockCreatedUser: Partial<User> = {
     id: uuidv4(),
@@ -23,9 +23,10 @@ describe('AuthService (Unit Tests)', () => {
   };
 
   beforeEach(async () => {
-    mockRedisClient = {
+    mockRedisService = {
       get: jest.fn(),
       setex: jest.fn(),
+      getClient: jest.fn(),
     } as any;
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -47,7 +48,7 @@ describe('AuthService (Unit Tests)', () => {
         },
         {
           provide: RedisService,
-          useValue: { getClient: () => mockRedisClient },
+          useValue: mockRedisService,
         },
       ],
     }).compile();
@@ -57,7 +58,7 @@ describe('AuthService (Unit Tests)', () => {
     jwtService = module.get(JwtService);
   });
 
-  it.only('should successfully register a new user and return token details', async () => {
+  it('should successfully register a new user and return token details', async () => {
     userService.create.mockResolvedValue(mockCreatedUser as User);
     jwtService.sign.mockReturnValueOnce('mock-access-token');
     jwtService.sign.mockReturnValueOnce('mock-refresh-token');
@@ -87,7 +88,7 @@ describe('AuthService (Unit Tests)', () => {
     );
   });
 
-  it.only('should return a JWT access token and refresh token for a valid login', async () => {
+  it('should return a JWT access token and refresh token for a valid login', async () => {
     const mockUser = mockCreatedUser as User;
     userService.findOneByUsername.mockResolvedValue(mockUser);
     jwtService.sign.mockReturnValueOnce('mock-access-token');
@@ -158,20 +159,20 @@ describe('AuthService (Unit Tests)', () => {
     expect(emailInUse).toBeTruthy();
   });
 
-  it.only('should store and retrieve token details in the cache', async () => {
+  it('should store and retrieve token details in the cache', async () => {
     const user_id = 'user123';
     const ip = '192.168.1.1';
     const user_agent = 'test-agent';
     const ttl = 3600;
     await authService.storeTokenDetails(user_id, ip, user_agent, ttl);
-    expect(mockRedisClient.setex).toHaveBeenCalledWith(
+    expect(mockRedisService.setex).toHaveBeenCalledWith(
       `token_details:${user_id}`,
       ttl,
       JSON.stringify({ ip, user_agent }),
     );
-    mockRedisClient.get.mockResolvedValue(JSON.stringify({ ip, user_agent }));
+    mockRedisService.get.mockResolvedValue(JSON.stringify({ ip, user_agent }));
     const retrievedDetails = await authService.getTokenDetails(user_id);
-    expect(mockRedisClient.get).toHaveBeenCalledWith(
+    expect(mockRedisService.get).toHaveBeenCalledWith(
       `token_details:${user_id}`,
     );
     expect(retrievedDetails).toEqual({
@@ -180,18 +181,18 @@ describe('AuthService (Unit Tests)', () => {
     });
   });
 
-  it.only('should identify a revoked refresh token', async () => {
+  it('should identify a revoked refresh token', async () => {
     const refresh_token = 'revokedToken123';
-    mockRedisClient.get.mockResolvedValue('blocked');
+    mockRedisService.get.mockResolvedValue('blocked');
     await expect(authService.verifyRefreshToken(refresh_token)).rejects.toThrow(
       UnauthorizedException,
     );
-    expect(mockRedisClient.get).toHaveBeenCalledWith(
+    expect(mockRedisService.get).toHaveBeenCalledWith(
       `blocklist:${refresh_token}`,
     );
   });
 
-  it.only('should invalidate a refresh token and add it to the blocklist', async () => {
+  it('should invalidate a refresh token and add it to the blocklist', async () => {
     const refresh_token = 'validToken123';
     const payload = {
       username: 'user123',
@@ -199,7 +200,7 @@ describe('AuthService (Unit Tests)', () => {
     };
     jwtService.verify.mockReturnValue(payload);
     await authService.invalidateToken(refresh_token);
-    expect(mockRedisClient.setex).toHaveBeenCalledWith(
+    expect(mockRedisService.setex).toHaveBeenCalledWith(
       `blocklist:${refresh_token}`,
       expect.any(Number),
       'blocked',

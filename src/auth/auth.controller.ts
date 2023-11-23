@@ -91,6 +91,7 @@ export class AuthController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('refresh')
   async refresh(@Req() req: Request) {
     const refresh_token = req.cookies['refresh_token'];
@@ -110,6 +111,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async verifyToken(@Req() req: Request) {
     const user = req.user;
+    console.log(req.user);
     const request_ip = req.ip;
     const user_agent = req.headers['user-agent'];
     const details = await this.authService.getTokenDetails(user.id);
@@ -121,9 +123,11 @@ export class AuthController {
     };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    console.log(req.cookies);
     const refresh_token = req.cookies['refresh_token'];
     if (refresh_token) {
       await this.authService.invalidateToken(refresh_token);

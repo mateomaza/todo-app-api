@@ -236,7 +236,7 @@ describe('TaskController (e2e)', () => {
     );
   });
 
-  it('should handle empty updated in UpdateTaskDto', async () => {
+  it('should handle empty update in UpdateTaskDto', async () => {
     taskService.update.mockResolvedValue(mockTask as Task);
     const response = await request(app.getHttpServer())
       .patch(`/api/tasks/${mockTask.id}/update`)

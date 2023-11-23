@@ -1,5 +1,5 @@
 import { Module, ValidationPipe } from '@nestjs/common';
-import { RedisModule } from 'nestjs-redis';
+import { RedisModule } from './redis.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -13,17 +13,7 @@ config();
 
 @Module({
   imports: [
-    RedisModule.forRootAsync({
-      useFactory: () => ({
-        host: process.env.REDIS_HOST,
-        port: +process.env.REDIS_PORT,
-        password: process.env.REDIS_PASSWORD,
-        tls:
-          process.env.REDIS_TLS === 'true'
-            ? { rejectUnauthorized: false }
-            : undefined,
-      }),
-    }),
+    RedisModule,
     MongooseModule.forRoot(process.env.MONGO_URI),
     AuthModule,
     TaskModule,

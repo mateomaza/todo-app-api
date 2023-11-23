@@ -2,20 +2,16 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { User } from './user/user.model';
 import { UserService } from './user/user.service';
 import { JwtService } from '@nestjs/jwt';
-import { RedisService } from 'nestjs-redis';
-import { Redis } from 'ioredis';
+import { RedisService } from 'src/redis.service';
 import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
-  private redisClient: Redis;
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly redisService: RedisService,
-  ) {
-    this.redisClient = this.redisService.getClient();
-  }
+  ) {}
   async login({ username }: LoginDto): Promise<{
     message: string;
     access_token: string;
@@ -59,14 +55,12 @@ export class AuthService {
     ttl: number,
   ): Promise<void> {
     const key = `token_details:${user_id}`;
-    const value = { ip, user_agent };
-    const stringValue = JSON.stringify(value);
-
-    await this.redisClient.setex(key, ttl, stringValue);
+    const value = JSON.stringify({ ip, user_agent });
+    await this.redisService.setex(key, ttl, value);
   }
   async getTokenDetails(user_id: string): Promise<any> {
     const key = `token_details:${user_id}`;
-    const storedDetailsString = await this.redisClient.get(key);
+    const storedDetailsString = await this.redisService.get(key);
     const storedDetails = JSON.parse(storedDetailsString);
     return storedDetails
       ? {
@@ -76,7 +70,7 @@ export class AuthService {
       : null;
   }
   async verifyRefreshToken(refresh_token: string): Promise<User | null> {
-    const isBlocked = await this.redisClient.get(`blocklist:${refresh_token}`);
+    const isBlocked = await this.redisService.get(`blocklist:${refresh_token}`);
     if (isBlocked) {
       throw new UnauthorizedException('Token has been revoked');
     }
@@ -96,7 +90,7 @@ export class AuthService {
       const remainingTime = expirationTime - currentTime;
 
       if (remainingTime > 0) {
-        await this.redisClient.setex(
+        await this.redisService.setex(
           `blocklist:${refresh_token}`,
           remainingTime,
           'blocked',

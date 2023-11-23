@@ -1,13 +1,16 @@
 import xss from 'xss';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import { config } from 'dotenv';
 import { Request, Response, NextFunction } from 'express';
+import { config } from 'dotenv';
+config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.use(cookieParser());
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -33,5 +36,4 @@ async function bootstrap() {
   await app.listen(3001);
 }
 
-config();
 bootstrap();
