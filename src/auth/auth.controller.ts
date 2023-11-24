@@ -17,6 +17,8 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtService } from '@nestjs/jwt';
 import { JwtAuthGuard } from './jwt.auth.guard';
+import { User } from './user/user.model';
+import { getUser } from './user/get-user.decorator';
 
 @Controller('api/auth')
 export class AuthController {
@@ -54,6 +56,11 @@ export class AuthController {
         user: result.newUser,
         access_token: result.access_token,
       };
+    } else {
+      return {
+        message: result.message,
+        statusCode: HttpStatus.CONFLICT,
+      };
     }
   }
 
@@ -64,9 +71,10 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
     @Body() loginDto: LoginDto,
+    @getUser() user: User,
   ) {
     const result = await this.authService.login(loginDto);
-    if (req.user) {
+    if (user) {
       const user_id = req.user.id;
       const user_ip = req.ip;
       const user_agent = req.headers['user-agent'];
@@ -85,7 +93,7 @@ export class AuthController {
       });
       return {
         message: result.message,
-        user: req.user,
+        user: user,
         access_token: result.access_token,
       };
     }
@@ -94,6 +102,8 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('refresh')
   async refresh(@Req() req: Request) {
+    console.log(req.headers);
+    console.log(req.cookies);
     const refresh_token = req.cookies['refresh_token'];
     const user = await this.authService.verifyRefreshToken(refresh_token);
     if (!user) {
@@ -103,15 +113,14 @@ export class AuthController {
       username: user.username,
       sub: user.id,
     });
+    console.log(new_access_token);
     return { access_token: new_access_token };
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('verifyToken')
   @HttpCode(HttpStatus.OK)
-  async verifyToken(@Req() req: Request) {
-    const user = req.user;
-    console.log(req.user);
+  async verifyToken(@Req() req: Request, @getUser() user: User) {
     const request_ip = req.ip;
     const user_agent = req.headers['user-agent'];
     const details = await this.authService.getTokenDetails(user.id);
@@ -127,7 +136,6 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    console.log(req.cookies);
     const refresh_token = req.cookies['refresh_token'];
     if (refresh_token) {
       await this.authService.invalidateToken(refresh_token);

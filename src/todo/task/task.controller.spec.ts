@@ -75,6 +75,10 @@ describe('TaskController (e2e)', () => {
     await app.init();
   });
 
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('should retrieve all tasks', async () => {
     taskService.findAll.mockResolvedValue(taskArray as Task[]);
     const response = await request(app.getHttpServer())

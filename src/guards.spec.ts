@@ -37,6 +37,7 @@ describe('Guard Integration', () => {
   });
 
   afterAll(async () => {
+    jest.clearAllMocks();
     await app.close();
     await mongoMemoryServer.stop();
   });

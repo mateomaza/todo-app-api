@@ -53,4 +53,8 @@ describe('LocalStrategy', () => {
     );
     expect(result).toBeNull();
   });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
 });

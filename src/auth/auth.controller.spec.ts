@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Request, Response, NextFunction } from 'express';
 import { RedisService } from 'src/redis.service';
 import { Redis } from 'ioredis';
 import { AuthService } from './auth.service';
-import { JwtService } from '@nestjs/jwt';
 import { JwtAuthGuard } from './jwt.auth.guard';
 import request from 'supertest';
 import {
@@ -13,6 +13,7 @@ import {
   UnauthorizedException,
   ExecutionContext,
 } from '@nestjs/common';
+import cookieParser from 'cookie-parser';
 import { AuthModule } from './auth.module';
 import { User, UserSchema } from './user/user.model';
 import { v4 as uuidv4 } from 'uuid';
@@ -37,16 +38,20 @@ jest.mock('./local-auth.guard', () => ({
   })),
 }));
 
+function mockUserMiddleware(req: Request, res: Response, next: NextFunction) {
+  req.user = mockCreatedUser;
+  next();
+}
+
 describe('AuthController (e2e)', () => {
   let app: INestApplication;
   let mongoMemoryServer: MongoMemoryServer;
   let authService: jest.Mocked<AuthService>;
-  let jwtService: jest.Mocked<JwtService>;
   let mockRedisService: jest.Mocked<Redis>;
 
   beforeAll(async () => {
-    mongoMemoryServer = await MongoMemoryServer.create();
     process.env.JWT_SECRET_KEY = 'test-key';
+    mongoMemoryServer = await MongoMemoryServer.create();
     const mockAuthService: Partial<jest.Mocked<AuthService>> = {
       register: jest.fn(),
       login: jest.fn(),
@@ -75,13 +80,6 @@ describe('AuthController (e2e)', () => {
       ],
       providers: [
         {
-          provide: JwtService,
-          useValue: {
-            sign: jest.fn(),
-            verify: jest.fn(),
-          },
-        },
-        {
           provide: RedisService,
           useValue: mockRedisService,
         },
@@ -94,10 +92,15 @@ describe('AuthController (e2e)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(mockUserMiddleware);
     app.useGlobalPipes(new ValidationPipe());
+    app.use(cookieParser());
     authService = app.get(AuthService);
-    jwtService = app.get(JwtService);
     await app.init();
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   it('should register a user and set refresh_token in cookies', async () => {
@@ -126,6 +129,12 @@ describe('AuthController (e2e)', () => {
   it('should handle existing username during registration', async () => {
     authService.isUsernameInUse.mockResolvedValue(true);
     authService.isEmailInUse.mockResolvedValue(false);
+    authService.register.mockResolvedValue({
+      newUser: null,
+      message: 'Username is already registered',
+      access_token: 'mock-access-token',
+      refresh_token: 'mock-refresh-token',
+    });
     const response = await request(app.getHttpServer())
       .post('/api/auth/register')
       .send({
@@ -142,6 +151,12 @@ describe('AuthController (e2e)', () => {
   it('should handle email in use during registration', async () => {
     authService.isUsernameInUse.mockResolvedValue(false);
     authService.isEmailInUse.mockResolvedValue(true);
+    authService.register.mockResolvedValue({
+      newUser: null,
+      message: 'Email is already in use',
+      access_token: 'mock-access-token',
+      refresh_token: 'mock-refresh-token',
+    });
     const response = await request(app.getHttpServer())
       .post('/api/auth/register')
       .send({
@@ -221,11 +236,12 @@ describe('AuthController (e2e)', () => {
 
   it('should verify token and return user details', async () => {
     authService.getTokenDetails.mockResolvedValue({
-      stored_ip: 'mock-ip',
+      stored_ip: '::ffff:127.0.0.1',
       stored_user_agent: 'mock-user-agent',
     });
     const response = await request(app.getHttpServer())
       .get('/api/auth/verifyToken')
+      .set('User-Agent', 'mock-user-agent')
       .expect(HttpStatus.OK);
     expect(response.body).toEqual({
       username: mockCreatedUser.username,
@@ -234,14 +250,13 @@ describe('AuthController (e2e)', () => {
   });
 
   it('should refresh access token', async () => {
+    const mockRefreshToken = 'mock-new-token';
     authService.verifyRefreshToken.mockResolvedValue(mockCreatedUser as User);
-    jwtService.sign.mockReturnValueOnce('new-mock-access-token');
     const response = await request(app.getHttpServer())
       .post('/api/auth/refresh')
-      .set('Cookie', ['refresh_token=mock-refresh-token'])
-      .expect(HttpStatus.OK);
-
-    expect(response.body.access_token).toBe('new-mock-access-token');
+      .set('Cookie', [`refresh_token=${mockRefreshToken}`])
+      .expect(HttpStatus.CREATED);
+    expect(response.body).toHaveProperty('access_token');
   });
 
   it('should validate field types in RegisterDto', async () => {

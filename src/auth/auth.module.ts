@@ -14,7 +14,7 @@ import { RedisService } from 'src/redis.service';
   imports: [
     UserModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.register({ secret: process.env.JWT_SECRET }),
+    JwtModule.register({ secret: process.env.JWT_SECRET_KEY }),
   ],
   controllers: [AuthController],
   providers: [
