@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Query,
   Body,
   Param,
   Patch,
@@ -15,6 +16,7 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { Task } from './task.model';
 import { JwtAuthGuard } from 'src/auth/jwt.auth.guard';
+import xss from 'xss';
 
 @Controller('api/tasks')
 @UseGuards(JwtAuthGuard)
@@ -54,5 +56,11 @@ export class TaskController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string): Promise<void> {
     await this.taskService.remove(id);
+  }
+
+  @Get()
+  async searchTasks(@Query('search') search: string): Promise<Task[]> {
+    const sanitizedQuery = xss(search);
+    return this.taskService.searchTasks(sanitizedQuery);
   }
 }

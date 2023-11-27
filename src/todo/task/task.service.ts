@@ -38,4 +38,15 @@ export class TaskService {
   async findUncompletedTasks(): Promise<Task[]> {
     return this.taskModel.find({ completed: false }).exec();
   }
+
+  async searchTasks(query: string): Promise<Task[]> {
+    return this.taskModel
+      .find({
+        $or: [
+          { title: { $regex: query, $options: 'i' } },
+          { description: { $regex: query, $options: 'i' } },
+        ],
+      })
+      .exec();
+  }
 }
