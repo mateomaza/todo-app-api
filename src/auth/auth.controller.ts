@@ -102,8 +102,6 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('refresh')
   async refresh(@Req() req: Request) {
-    console.log(req.headers);
-    console.log(req.cookies);
     const refresh_token = req.cookies['refresh_token'];
     const user = await this.authService.verifyRefreshToken(refresh_token);
     if (!user) {
@@ -113,7 +111,6 @@ export class AuthController {
       username: user.username,
       sub: user.id,
     });
-    console.log(new_access_token);
     return { access_token: new_access_token };
   }
 

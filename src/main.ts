@@ -1,14 +1,14 @@
-import xss from 'xss';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { sanitizeInput } from './sanitize.service';
 import { Request, Response, NextFunction } from 'express';
 import { config } from 'dotenv';
 config();
 
-async function bootstrap() {
+async function bootstrap(): Promise<INestApplication> {
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());
   app.useGlobalPipes(
@@ -19,8 +19,8 @@ async function bootstrap() {
     }),
   );
   app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.body) req.body = JSON.parse(xss(JSON.stringify(req.body)));
-    if (req.query) req.query = JSON.parse(xss(JSON.stringify(req.query)));
+    if (req.body) req.body = sanitizeInput(req.body);
+    if (req.query) req.query = sanitizeInput(req.query);
     next();
   });
   app.use(
@@ -33,7 +33,12 @@ async function bootstrap() {
       },
     }),
   );
-  await app.listen(3001);
+  if (process.env.NODE_ENV !== 'test') {
+    await app.listen(3001);
+  }
+  return app;
 }
 
-bootstrap();
+const appPromise = bootstrap();
+
+export { appPromise };
