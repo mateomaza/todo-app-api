@@ -115,6 +115,70 @@ describe('TaskService', () => {
     expect(mockTaskModel.find).toHaveBeenCalledWith({ completed: false });
   });
 
+  it('should return tasks with exact match in title or description', async () => {
+    const query = 'Test Task';
+    mockTaskModel.find.mockReturnValue({
+      exec: jest.fn().mockResolvedValue([mockTask]),
+    });
+
+    const result = await service.searchTasks(query);
+    expect(result).toEqual([mockTask]);
+    expect(mockTaskModel.find).toHaveBeenCalledWith({
+      $or: [
+        { title: { $regex: query, $options: 'i' } },
+        { description: { $regex: query, $options: 'i' } },
+      ],
+    });
+  });
+
+  it('should return tasks with partial match in title or description', async () => {
+    const query = 'Test';
+    mockTaskModel.find.mockReturnValue({
+      exec: jest.fn().mockResolvedValue([mockTask]),
+    });
+
+    const result = await service.searchTasks(query);
+    expect(result).toEqual([mockTask]);
+    expect(mockTaskModel.find).toHaveBeenCalledWith({
+      $or: [
+        { title: { $regex: query, $options: 'i' } },
+        { description: { $regex: query, $options: 'i' } },
+      ],
+    });
+  });
+
+  it('should return an empty array if no tasks match the query', async () => {
+    const query = 'Nonexistent Task';
+    mockTaskModel.find.mockReturnValue({
+      exec: jest.fn().mockResolvedValue([]),
+    });
+
+    const result = await service.searchTasks(query);
+    expect(result).toEqual([]);
+    expect(mockTaskModel.find).toHaveBeenCalledWith({
+      $or: [
+        { title: { $regex: query, $options: 'i' } },
+        { description: { $regex: query, $options: 'i' } },
+      ],
+    });
+  });
+
+  it('should correctly handle queries with special characters', async () => {
+    const query = 'Task$^';
+    mockTaskModel.find.mockReturnValue({
+      exec: jest.fn().mockResolvedValue([mockTask]),
+    });
+
+    const result = await service.searchTasks(query);
+    expect(result).toEqual([mockTask]);
+    expect(mockTaskModel.find).toHaveBeenCalledWith({
+      $or: [
+        { title: { $regex: query, $options: 'i' } },
+        { description: { $regex: query, $options: 'i' } },
+      ],
+    });
+  });
+
   afterEach(() => {
     jest.clearAllMocks();
   });
