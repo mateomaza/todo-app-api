@@ -37,6 +37,7 @@ describe('TaskController (e2e)', () => {
       findAll: jest.fn(),
       findById: jest.fn(),
       findUncompletedTasks: jest.fn(),
+      searchTasks: jest.fn(),
       update: jest.fn().mockImplementation((id, updateTaskDto) => {
         if (id === mockTask.id) {
           return Promise.resolve({ ...mockTask, ...updateTaskDto });
@@ -256,6 +257,35 @@ describe('TaskController (e2e)', () => {
         createdAt: expect.any(String),
       }),
     );
+  });
+
+  it('should successfully search tasks with a given query', async () => {
+    const query = 'Test Task';
+    taskService.searchTasks.mockResolvedValue(taskArray as Task[]);
+    const response = await request(app.getHttpServer())
+      .get(`/api/tasks/search/for?query=${query}`)
+      .expect(HttpStatus.OK);
+    expect(response.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: expect.any(String),
+          title: expect.any(String),
+          description: expect.any(String),
+          completed: expect.any(Boolean),
+          time: expect.any(String),
+          createdAt: expect.any(String),
+        }),
+      ]),
+    );
+  });
+
+  it('should return an empty object for a search query with no matches', async () => {
+    const query = 'Nonexistent Task';
+    taskService.searchTasks.mockResolvedValue([]);
+    const response = await request(app.getHttpServer())
+      .get(`/api/tasks/search/for?query=${query}`)
+      .expect(HttpStatus.OK);
+    expect(response.body).toEqual([]);
   });
 
   afterAll(async () => {

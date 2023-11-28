@@ -1,4 +1,4 @@
-import { sanitizeInput } from './sanitize.service';
+import { sanitizeObject } from './sanitize.service';
 
 const xssPayloads = [
   "<script>alert('XSS')</script>",
@@ -17,7 +17,7 @@ const xssPayloads = [
 describe('XSS Sanitization', () => {
   xssPayloads.forEach((payload) => {
     it(`should sanitize payload: ${payload}`, () => {
-      const sanitized = sanitizeInput(payload);
+      const sanitized = sanitizeObject(payload);
       expect(sanitized).not.toEqual(payload);
     });
   });

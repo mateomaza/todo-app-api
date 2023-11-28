@@ -3,7 +3,7 @@ import cookieParser from 'cookie-parser';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { sanitizeInput } from './sanitize.service';
+import { sanitizeObject, sanitizeString } from './sanitize.service';
 import { Request, Response, NextFunction } from 'express';
 import { config } from 'dotenv';
 config();
@@ -19,8 +19,24 @@ async function bootstrap(): Promise<INestApplication> {
     }),
   );
   app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.body) req.body = sanitizeInput(req.body);
-    if (req.query) req.query = sanitizeInput(req.query);
+    if (typeof req.body === 'string') {
+      req.body = sanitizeString(req.body);
+    } else if (req.body && typeof req.body === 'object') {
+      req.body = sanitizeObject(req.body);
+    }
+    Object.keys(req.query).forEach((key) => {
+      const value = req.query[key];
+      if (typeof value === 'string') {
+        req.query[key] = sanitizeString(value);
+      } else if (Array.isArray(value)) {
+        req.query[key] = value.map((item) =>
+          typeof item === 'string' ? sanitizeString(item) : item,
+        );
+      } else if (value && typeof value === 'object') {
+        req.query[key] = sanitizeObject(value);
+      }
+    });
+
     next();
   });
   app.use(

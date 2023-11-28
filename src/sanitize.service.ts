@@ -1,5 +1,9 @@
 import xss from 'xss';
 
-export function sanitizeInput(input: any) {
+export function sanitizeObject(input: any) {
   return JSON.parse(xss(JSON.stringify(input)));
+}
+
+export function sanitizeString(input: string): string {
+  return xss(input);
 }
