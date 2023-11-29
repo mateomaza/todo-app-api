@@ -29,14 +29,11 @@ async function bootstrap(): Promise<INestApplication> {
       if (typeof value === 'string') {
         req.query[key] = sanitizeString(value);
       } else if (Array.isArray(value)) {
-        req.query[key] = value.map((item) =>
+        req.query[key] = value.map((item: any) =>
           typeof item === 'string' ? sanitizeString(item) : item,
         );
-      } else if (value && typeof value === 'object') {
-        req.query[key] = sanitizeObject(value);
       }
     });
-
     next();
   });
   app.use(
