@@ -42,6 +42,7 @@ async function bootstrap(): Promise<INestApplication> {
         directives: {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'"],
+          reportUri: '/report-csp-violation',
         },
       },
     }),
