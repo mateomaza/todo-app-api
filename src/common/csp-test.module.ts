@@ -1,7 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import helmet from 'helmet';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { AppController } from '../app.controller';
+import { AppService } from '../app.service';
 
 @Module({
   controllers: [AppController],

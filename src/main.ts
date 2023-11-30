@@ -3,9 +3,10 @@ import cookieParser from 'cookie-parser';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { sanitizeObject, sanitizeString } from './sanitize.service';
+import { sanitizeObject, sanitizeString } from './common/sanitize.service';
 import { Request, Response, NextFunction } from 'express';
 import { config } from 'dotenv';
+
 config();
 
 async function bootstrap(): Promise<INestApplication> {

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Request, Response, NextFunction } from 'express';
-import { RedisService } from 'src/redis.service';
+import { RedisService } from 'src/common/redis.service';
 import { Redis } from 'ioredis';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt.auth.guard';

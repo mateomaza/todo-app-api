@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, HttpStatus } from '@nestjs/common';
 import request from 'supertest';
-import { TaskModule } from './todo/task/task.module';
-import { Task, TaskSchema } from './todo/task/task.model';
+import { TaskModule } from '../task/task.module';
+import { Task, TaskSchema } from '../task/task.model';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseModule } from '@nestjs/mongoose';
 

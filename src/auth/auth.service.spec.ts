@@ -6,7 +6,7 @@ import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from './user/user.model';
-import { RedisService } from 'src/redis.service';
+import { RedisService } from 'src/common/redis.service';
 import { Redis } from 'ioredis';
 
 describe('AuthService (Unit Tests)', () => {

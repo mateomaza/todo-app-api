@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { User } from './user/user.model';
 import { UserService } from './user/user.service';
 import { JwtService } from '@nestjs/jwt';
-import { RedisService } from 'src/redis.service';
+import { RedisService } from 'src/common/redis.service';
 import { LoginDto } from './dto/login.dto';
 
 @Injectable()
