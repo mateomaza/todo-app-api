@@ -7,6 +7,9 @@ export class AuditLog extends Document {
   timestamp: Date;
 
   @Prop()
+  level: string;
+
+  @Prop()
   userId: string;
 
   @Prop()
