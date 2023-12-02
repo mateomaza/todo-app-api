@@ -9,7 +9,7 @@ import { User } from './user/user.model';
 import { RedisService } from 'src/common/redis.service';
 import { Redis } from 'ioredis';
 
-describe('AuthService (Unit Tests)', () => {
+describe('AuthService', () => {
   let authService: AuthService;
   let userService: jest.Mocked<UserService>;
   let jwtService: jest.Mocked<JwtService>;
