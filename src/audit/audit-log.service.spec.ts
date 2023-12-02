@@ -57,6 +57,21 @@ describe('AuditLogService', () => {
     expect(mockAuditLogModel.insertMany).toHaveBeenCalled();
   });
 
+  it('should correctly flush logs when the cron method is invoked', async () => {
+    for (let i = 0; i < 5; i++) {
+      await service.logEntry({
+        level: 'info',
+        userId: `user${i}`,
+        action: 'testAction',
+        status: 'success',
+        details: 'Test details',
+      });
+    }
+    await service.handleCron();
+    expect(service.logBufferForTesting.length).toBe(0);
+    expect(mockAuditLogModel.insertMany).toHaveBeenCalled();
+  });
+
   it('should flush the buffer on module destroy', async () => {
     await service.logEntry({
       level: 'info',

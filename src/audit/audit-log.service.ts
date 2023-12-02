@@ -1,6 +1,7 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { AuditLog } from './audit-log.model';
 import { CreateAuditLogDto } from './dto/create-audit-log.dto';
 
@@ -12,10 +13,11 @@ export class AuditLogService implements OnModuleDestroy {
 
   constructor(
     @InjectModel(AuditLog.name) private auditLogModel: Model<AuditLog>,
-  ) {
-    setInterval(() => {
-      this.flushLogs();
-    }, this.flushInterval);
+  ) {}
+
+  @Cron(CronExpression.EVERY_10_SECONDS)
+  async handleCron() {
+    await this.flushLogs();
   }
 
   async logEntry(dto: CreateAuditLogDto): Promise<void> {
@@ -43,9 +45,5 @@ export class AuditLogService implements OnModuleDestroy {
 
   get maxBufferSizeForTesting() {
     return this.maxBufferSize;
-  }
-
-  get flushIntervalForTesting() {
-    return this.flushInterval;
   }
 }
