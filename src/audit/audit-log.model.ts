@@ -9,8 +9,8 @@ export class AuditLog extends Document {
   @Prop()
   level: string;
 
-  @Prop()
-  userId: string;
+  @Prop({ required: false })
+  userId?: string;
 
   @Prop()
   action: string;
@@ -18,8 +18,8 @@ export class AuditLog extends Document {
   @Prop()
   status: string;
 
-  @Prop()
-  details: string;
+  @Prop({ required: false })
+  details?: string;
 }
 
 export const AuditLogSchema = SchemaFactory.createForClass(AuditLog);

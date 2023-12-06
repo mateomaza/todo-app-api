@@ -1,4 +1,10 @@
-import { Module, ValidationPipe } from '@nestjs/common';
+import {
+  Module,
+  ValidationPipe,
+  MiddlewareConsumer,
+  NestModule,
+} from '@nestjs/common';
+import { AuditLogMiddleware } from './audit/audit-log.middleware';
 import { RedisModule } from './common/redis.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
@@ -28,4 +34,8 @@ config();
     AppService,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(AuditLogMiddleware).forRoutes(AuthController);
+  }
+}
