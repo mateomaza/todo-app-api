@@ -9,7 +9,6 @@ import { JwtAuthGuard } from './jwt.auth.guard';
 import { LocalAuthGuard } from './local-auth.guard';
 import { JwtStrategy } from './jwt.strategy';
 import { RedisService } from 'src/common/redis.service';
-import { AuditLogService } from 'src/audit/audit-log.service';
 
 @Module({
   imports: [
@@ -25,7 +24,6 @@ import { AuditLogService } from 'src/audit/audit-log.service';
     JwtStrategy,
     JwtAuthGuard,
     RedisService,
-    AuditLogService,
   ],
   exports: [AuthService, JwtAuthGuard],
 })

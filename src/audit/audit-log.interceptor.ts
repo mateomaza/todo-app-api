@@ -33,7 +33,7 @@ export class AuditLogInterceptor implements NestInterceptor {
         this.auditLogService.logEntry({
           level: status >= 400 ? 'error' : 'info',
           action: `${request.method} ${request.url}`,
-          outcome: status >= 400 ? 'failed' : 'success',
+          outcome: status >= 400 ? 'fail' : 'success',
           details: `Completed ${controllerName}.${handlerName} with status ${status}`,
         });
       }),
