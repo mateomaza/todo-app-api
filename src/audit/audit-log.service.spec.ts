@@ -35,7 +35,7 @@ describe('AuditLogService', () => {
       level: mockLogEntry.level,
       userId: mockLogEntry.userId,
       action: mockLogEntry.action,
-      status: mockLogEntry.status,
+      outcome: mockLogEntry.status,
       details: mockLogEntry.details,
     });
     expect(service.logBufferForTesting).toContainEqual(
@@ -49,7 +49,7 @@ describe('AuditLogService', () => {
         level: 'info',
         userId: `user${i}`,
         action: 'testAction',
-        status: 'success',
+        outcome: 'success',
         details: 'Test details',
       });
     }
@@ -63,7 +63,7 @@ describe('AuditLogService', () => {
         level: 'info',
         userId: `user${i}`,
         action: 'testAction',
-        status: 'success',
+        outcome: 'success',
         details: 'Test details',
       });
     }
@@ -77,7 +77,7 @@ describe('AuditLogService', () => {
       level: 'info',
       userId: `123`,
       action: 'testAction',
-      status: 'success',
+      outcome: 'success',
       details: 'Test details',
     });
     await service.onModuleDestroy();

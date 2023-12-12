@@ -8,7 +8,6 @@ import { CreateAuditLogDto } from './dto/create-audit-log.dto';
 @Injectable()
 export class AuditLogService implements OnModuleDestroy {
   private logBuffer: CreateAuditLogDto[] = [];
-  private readonly flushInterval = 10000;
   private readonly maxBufferSize = 100;
 
   constructor(

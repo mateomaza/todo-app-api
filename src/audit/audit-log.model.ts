@@ -16,7 +16,7 @@ export class AuditLog extends Document {
   action: string;
 
   @Prop()
-  status: string;
+  outcome: string;
 
   @Prop({ required: false })
   details?: string;
