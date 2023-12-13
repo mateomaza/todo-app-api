@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtAuthGuard } from 'src/auth/jwt.auth.guard';
+import { AuditLogService } from 'src/audit/audit-log.service';
 
 describe('TaskController (e2e)', () => {
   let app: INestApplication;
@@ -28,6 +29,10 @@ describe('TaskController (e2e)', () => {
     { id: uuidv4(), completed: false },
   ];
   const taskArray: Partial<Task>[] = [mockTask, mockTask, mockTask];
+
+  const mockAuditLogService: Partial<AuditLogService> = {
+    logEntry: jest.fn(),
+  };
 
   beforeAll(async () => {
     mongoMemoryServer = await MongoMemoryServer.create();
@@ -68,6 +73,8 @@ describe('TaskController (e2e)', () => {
       .useValue({ canActivate: true })
       .overrideProvider(TaskService)
       .useValue(mockTaskService as jest.Mocked<TaskService>)
+      .overrideProvider(AuditLogService)
+      .useValue(mockAuditLogService as jest.Mocked<AuditLogService>)
       .compile();
 
     app = moduleFixture.createNestApplication();

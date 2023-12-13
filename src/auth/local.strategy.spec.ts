@@ -1,8 +1,14 @@
 import { LocalStrategy } from './local.strategy';
 import { UserService } from './user/user.service';
 import { Test, TestingModule } from '@nestjs/testing';
-import { User } from './user/user.model';
+import { User, UserSchema } from './user/user.model';
 import { v4 as uuidv4 } from 'uuid';
+import { MongooseModule } from '@nestjs/mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import { AuditLogService } from 'src/audit/audit-log.service';
+import { AuthService } from './auth.service';
+import { JwtService } from '@nestjs/jwt';
+import { RedisService } from 'src/common/redis.service';
 
 const mockCreatedUser: Partial<User> = {
   id: uuidv4(),
@@ -15,16 +21,49 @@ const mockCreatedUser: Partial<User> = {
 describe('LocalStrategy', () => {
   let localStrategy: LocalStrategy;
   let userService: jest.Mocked<UserService>;
+  let mongoMemoryServer: MongoMemoryServer;
+  let mockRedisService: jest.Mocked<RedisService>;
+
+  const mockAuditLogService: Partial<AuditLogService> = {
+    logEntry: jest.fn(),
+  };
 
   beforeEach(async () => {
+    mockRedisService = {
+      get: jest.fn(),
+      setex: jest.fn(),
+      getClient: jest.fn(),
+      increment: jest.fn(),
+      expire: jest.fn(),
+      del: jest.fn(),
+    } as any;
+    mongoMemoryServer = await MongoMemoryServer.create();
     const module: TestingModule = await Test.createTestingModule({
+      imports: [
+        MongooseModule.forRootAsync({
+          useFactory: async () => ({
+            uri: mongoMemoryServer.getUri(),
+          }),
+        }),
+        MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+      ],
       providers: [
         LocalStrategy,
+        AuthService,
+        JwtService,
+        {
+          provide: RedisService,
+          useValue: mockRedisService,
+        },
         {
           provide: UserService,
           useValue: {
             findOneByUsername: jest.fn(),
           },
+        },
+        {
+          provide: AuditLogService,
+          useValue: mockAuditLogService,
         },
       ],
     }).compile();

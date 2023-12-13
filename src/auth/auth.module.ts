@@ -9,10 +9,12 @@ import { JwtAuthGuard } from './jwt.auth.guard';
 import { LocalAuthGuard } from './local-auth.guard';
 import { JwtStrategy } from './jwt.strategy';
 import { RedisService } from 'src/common/redis.service';
+import { AuditLogModule } from 'src/audit/audit-log.module';
 
 @Module({
   imports: [
     UserModule,
+    AuditLogModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({ secret: process.env.JWT_SECRET_KEY }),
   ],

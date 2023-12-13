@@ -5,10 +5,15 @@ import { TaskModule } from '../task/task.module';
 import { Task, TaskSchema } from '../task/task.model';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AuditLogService } from 'src/audit/audit-log.service';
 
 describe('Guard Integration', () => {
   let app: INestApplication;
   let mongoMemoryServer: MongoMemoryServer;
+
+  const mockAuditLogService: Partial<AuditLogService> = {
+    logEntry: jest.fn(),
+  };
 
   beforeAll(async () => {
     process.env.JWT_SECRET_KEY = 'test-key';
@@ -23,7 +28,10 @@ describe('Guard Integration', () => {
         MongooseModule.forFeature([{ name: Task.name, schema: TaskSchema }]),
         TaskModule,
       ],
-    }).compile();
+    })
+      .overrideProvider(AuditLogService)
+      .useValue(mockAuditLogService as jest.Mocked<AuditLogService>)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
