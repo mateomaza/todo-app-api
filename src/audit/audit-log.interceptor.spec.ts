@@ -113,14 +113,14 @@ describe('AuditLogMiddleware', () => {
     expect(mockAuditLogService.logEntry).toHaveBeenCalledWith({
       level: 'info',
       action: 'POST /api/auth/register',
-      outcome: 'in-progress',
       details: 'Entering AuthController.register',
+      outcome: 'in-progress',
     });
     expect(mockAuditLogService.logEntry).toHaveBeenCalledWith({
       level: 'info',
       action: 'POST /api/auth/register',
-      outcome: 'success',
       details: 'Completed AuthController.register with status 201',
+      outcome: 'success',
     });
   });
 

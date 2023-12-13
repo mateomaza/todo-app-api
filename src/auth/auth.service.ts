@@ -4,6 +4,7 @@ import { UserService } from './user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { RedisService } from 'src/common/redis.service';
 import { LoginDto } from './dto/login.dto';
+import { AuditLogService } from 'src/audit/audit-log.service';
 
 @Injectable()
 export class AuthService {
@@ -11,6 +12,8 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly redisService: RedisService,
+    private readonly auditLogService: AuditLogService,
+    private readonly MAX_LOGIN_ATTEMPTS: 7,
   ) {}
   async login({ username }: LoginDto): Promise<{
     message: string;
@@ -22,6 +25,23 @@ export class AuthService {
     const access_token = this.jwtService.sign(payload, { expiresIn: '15m' });
     const refresh_token = this.jwtService.sign(payload, { expiresIn: '7d' });
     return { message: 'Login successful', access_token, refresh_token };
+  }
+  async incrementFailedLoginAttempts(username: string): Promise<void> {
+    const key = `failedLoginAttempts:${username}`;
+    await this.redisService.increment(key);
+    await this.redisService.expire(key, 3600);
+    const count = parseInt(await this.redisService.get(key));
+    if (count > this.MAX_LOGIN_ATTEMPTS) {
+      this.auditLogService.logEntry({
+        level: 'warn',
+        action: 'Failed Login Attempt',
+        details: `Multiple failed login attempts for user ${username}.`,
+      });
+    }
+  }
+  async resetFailedLoginAttempts(username: string) {
+    const key = `failedLoginAttempts:${username}`;
+    await this.redisService.del(key);
   }
   async register(user: Partial<User>): Promise<{
     message: string;

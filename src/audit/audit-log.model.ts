@@ -16,10 +16,10 @@ export class AuditLog extends Document {
   action: string;
 
   @Prop()
-  outcome: string;
+  details: string;
 
   @Prop({ required: false })
-  details?: string;
+  outcome?: string;
 }
 
 export const AuditLogSchema = SchemaFactory.createForClass(AuditLog);

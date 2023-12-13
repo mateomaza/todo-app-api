@@ -3,7 +3,6 @@ import {
   NestInterceptor,
   ExecutionContext,
   CallHandler,
-  HttpStatus,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -21,20 +20,20 @@ export class AuditLogInterceptor implements NestInterceptor {
     this.auditLogService.logEntry({
       level: 'info',
       action: `${request.method} ${request.url}`,
-      outcome: 'in-progress',
       details: `Entering ${controllerName}.${handlerName}`,
+      outcome: 'in-progress',
     });
 
     return next.handle().pipe(
       tap(() => {
         const response = context.switchToHttp().getResponse();
-        const status = response.statusCode || HttpStatus.OK;
+        const status = response.statusCode;
 
         this.auditLogService.logEntry({
           level: status >= 400 ? 'error' : 'info',
           action: `${request.method} ${request.url}`,
-          outcome: status >= 400 ? 'fail' : 'success',
           details: `Completed ${controllerName}.${handlerName} with status ${status}`,
+          outcome: status >= 400 ? 'fail' : 'success',
         });
       }),
     );

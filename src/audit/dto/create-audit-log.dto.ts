@@ -15,9 +15,9 @@ export class CreateAuditLogDto {
 
   @IsString()
   @IsNotEmpty()
-  outcome: string;
+  details: string;
 
   @IsString()
   @IsOptional()
-  details?: string;
+  outcome?: string;
 }

@@ -28,15 +28,15 @@ describe('AuditLogService', () => {
       level: 'info',
       userId: '123',
       action: 'testAction',
-      outcome: 'success',
       details: 'Test details',
+      outcome: 'success',
     };
     await service.logEntry({
       level: mockLogEntry.level,
       userId: mockLogEntry.userId,
       action: mockLogEntry.action,
-      outcome: mockLogEntry.outcome,
       details: mockLogEntry.details,
+      outcome: mockLogEntry.outcome,
     });
     expect(service.logBufferForTesting).toContainEqual(
       expect.objectContaining(mockLogEntry),
@@ -49,8 +49,8 @@ describe('AuditLogService', () => {
         level: 'info',
         userId: `user${i}`,
         action: 'testAction',
-        outcome: 'success',
         details: 'Test details',
+        outcome: 'success',
       });
     }
     expect(service.logBufferForTesting.length).toBe(0);
@@ -63,8 +63,8 @@ describe('AuditLogService', () => {
         level: 'info',
         userId: `user${i}`,
         action: 'testAction',
-        outcome: 'success',
         details: 'Test details',
+        outcome: 'success',
       });
     }
     await service.handleCron();
@@ -77,8 +77,8 @@ describe('AuditLogService', () => {
       level: 'info',
       userId: `123`,
       action: 'testAction',
-      outcome: 'success',
       details: 'Test details',
+      outcome: 'success',
     });
     await service.onModuleDestroy();
     expect(service.logBufferForTesting.length).toBe(0);
