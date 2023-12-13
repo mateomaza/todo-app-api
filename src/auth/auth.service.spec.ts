@@ -7,13 +7,13 @@ import { LoginDto } from './dto/login.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from './user/user.model';
 import { RedisService } from 'src/common/redis.service';
-import { Redis } from 'ioredis';
+import { AuditLogService } from 'src/audit/audit-log.service';
 
 describe('AuthService', () => {
   let authService: AuthService;
   let userService: jest.Mocked<UserService>;
   let jwtService: jest.Mocked<JwtService>;
-  let mockRedisService: jest.Mocked<Redis>;
+  let mockRedisService: jest.Mocked<RedisService>;
 
   const mockCreatedUser: Partial<User> = {
     id: uuidv4(),
@@ -22,11 +22,18 @@ describe('AuthService', () => {
     createdAt: new Date(),
   };
 
+  const mockAuditLogService: Partial<AuditLogService> = {
+    logEntry: jest.fn(),
+  };
+
   beforeEach(async () => {
     mockRedisService = {
       get: jest.fn(),
       setex: jest.fn(),
       getClient: jest.fn(),
+      increment: jest.fn(),
+      expire: jest.fn(),
+      del: jest.fn(),
     } as any;
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -49,6 +56,10 @@ describe('AuthService', () => {
         {
           provide: RedisService,
           useValue: mockRedisService,
+        },
+        {
+          provide: AuditLogService,
+          useValue: mockAuditLogService,
         },
       ],
     }).compile();
@@ -93,14 +104,11 @@ describe('AuthService', () => {
     userService.findOneByUsername.mockResolvedValue(mockUser);
     jwtService.sign.mockReturnValueOnce('mock-access-token');
     jwtService.sign.mockReturnValueOnce('mock-refresh-token');
-
     const loginDto: LoginDto = {
       username: 'new_user',
       password: 'correct_password',
     };
-
     const result = await authService.login(loginDto);
-
     expect(result).toBeDefined();
     expect(result.message).toEqual('Login successful');
     expect(result.access_token).toEqual('mock-access-token');
@@ -190,6 +198,11 @@ describe('AuthService', () => {
     expect(mockRedisService.get).toHaveBeenCalledWith(
       `blocklist:${refresh_token}`,
     );
+    expect(mockAuditLogService.logEntry).toHaveBeenCalledWith({
+      level: 'warn',
+      action: 'Blocked Token Attempt',
+      details: `Attempt to use a revoked token.`,
+    });
   });
 
   it('should invalidate a refresh token and add it to the blocklist', async () => {
@@ -205,6 +218,25 @@ describe('AuthService', () => {
       expect.any(Number),
       'blocked',
     );
+  });
+
+  it('should increment failed login attempts and log warning after threshold', async () => {
+    const username = 'testuser';
+    mockRedisService.get.mockResolvedValue('11');
+    mockRedisService.increment.mockResolvedValue(12);
+    await authService.incrementFailedLoginAttempts(username);
+    expect(mockRedisService.increment).toHaveBeenCalledWith(
+      `failedLoginAttempts:${username}`,
+    );
+    expect(mockRedisService.expire).toHaveBeenCalledWith(
+      `failedLoginAttempts:${username}`,
+      3600,
+    );
+    expect(mockAuditLogService.logEntry).toHaveBeenCalledWith({
+      level: 'warn',
+      action: 'Failed Login Attempt',
+      details: `Multiple failed login attempts for user ${username}.`,
+    });
   });
 
   afterEach(() => {

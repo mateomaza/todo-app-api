@@ -6,6 +6,8 @@ import { RedisService } from 'src/common/redis.service';
 import { LoginDto } from './dto/login.dto';
 import { AuditLogService } from 'src/audit/audit-log.service';
 
+const MAX_LOGIN_ATTEMPTS = 7;
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -13,7 +15,6 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly redisService: RedisService,
     private readonly auditLogService: AuditLogService,
-    private readonly MAX_LOGIN_ATTEMPTS: 7,
   ) {}
   async login({ username }: LoginDto): Promise<{
     message: string;
@@ -30,8 +31,8 @@ export class AuthService {
     const key = `failedLoginAttempts:${username}`;
     await this.redisService.increment(key);
     await this.redisService.expire(key, 3600);
-    const count = parseInt(await this.redisService.get(key));
-    if (count > this.MAX_LOGIN_ATTEMPTS) {
+    const count = parseInt(await this.redisService.get(key), 10);
+    if (count > MAX_LOGIN_ATTEMPTS) {
       this.auditLogService.logEntry({
         level: 'warn',
         action: 'Failed Login Attempt',
@@ -102,11 +103,6 @@ export class AuthService {
     try {
       const payload = this.jwtService.verify(refresh_token);
       const user = await this.userService.findOneByUsername(payload.username);
-      this.auditLogService.logEntry({
-        level: 'info',
-        action: 'Token Refresh',
-        details: `Refresh token used for user ${payload.username}.`,
-      });
       return user;
     } catch (error) {
       return null;
