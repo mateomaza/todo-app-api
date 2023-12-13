@@ -92,11 +92,21 @@ export class AuthService {
   async verifyRefreshToken(refresh_token: string): Promise<User | null> {
     const isBlocked = await this.redisService.get(`blocklist:${refresh_token}`);
     if (isBlocked) {
+      this.auditLogService.logEntry({
+        level: 'warn',
+        action: 'Blocked Token Attempt',
+        details: `Attempt to use a revoked token.`,
+      });
       throw new UnauthorizedException('Token has been revoked');
     }
     try {
       const payload = this.jwtService.verify(refresh_token);
       const user = await this.userService.findOneByUsername(payload.username);
+      this.auditLogService.logEntry({
+        level: 'info',
+        action: 'Token Refresh',
+        details: `Refresh token used for user ${payload.username}.`,
+      });
       return user;
     } catch (error) {
       return null;
