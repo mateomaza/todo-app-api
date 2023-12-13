@@ -24,6 +24,11 @@ describe('LocalStrategy', () => {
   let mongoMemoryServer: MongoMemoryServer;
   let mockRedisService: jest.Mocked<RedisService>;
 
+  const mockAuthService: Partial<AuthService> = {
+    incrementFailedLoginAttempts: jest.fn(),
+    resetFailedLoginAttempts: jest.fn(),
+  };
+
   const mockAuditLogService: Partial<AuditLogService> = {
     logEntry: jest.fn(),
   };
@@ -49,8 +54,11 @@ describe('LocalStrategy', () => {
       ],
       providers: [
         LocalStrategy,
-        AuthService,
         JwtService,
+        {
+          provide: AuthService,
+          useValue: mockAuthService,
+        },
         {
           provide: RedisService,
           useValue: mockRedisService,
@@ -78,19 +86,33 @@ describe('LocalStrategy', () => {
     expect(result).toEqual(mockCreatedUser);
   });
 
-  it('should return null if user is not found', async () => {
+  it('should return null if user is not found and increment "failed login attempts"', async () => {
     userService.findOneByUsername.mockResolvedValue(null);
     const result = await localStrategy.validate('non_existent', 'password');
     expect(result).toBeNull();
+    expect(mockAuthService.incrementFailedLoginAttempts).toHaveBeenCalledWith(
+      'non_existent',
+    );
   });
 
-  it('should return null if password is incorrect', async () => {
+  it('should return null if password is incorrect and increment "failed login attempts"', async () => {
     userService.findOneByUsername.mockResolvedValue(mockCreatedUser as User);
     const result = await localStrategy.validate(
       'new_user',
       'incorrect_password',
     );
     expect(result).toBeNull();
+    expect(mockAuthService.incrementFailedLoginAttempts).toHaveBeenCalledWith(
+      'new_user',
+    );
+  });
+
+  it('should reset "failed login attempts" on successful login', async () => {
+    userService.findOneByUsername.mockResolvedValue(mockCreatedUser as User);
+    await localStrategy.validate('new_user', 'correct_password');
+    expect(mockAuthService.resetFailedLoginAttempts).toHaveBeenCalledWith(
+      'new_user',
+    );
   });
 
   afterEach(() => {
