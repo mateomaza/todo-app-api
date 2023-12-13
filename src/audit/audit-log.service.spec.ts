@@ -28,14 +28,14 @@ describe('AuditLogService', () => {
       level: 'info',
       userId: '123',
       action: 'testAction',
-      status: 'success',
+      outcome: 'success',
       details: 'Test details',
     };
     await service.logEntry({
       level: mockLogEntry.level,
       userId: mockLogEntry.userId,
       action: mockLogEntry.action,
-      outcome: mockLogEntry.status,
+      outcome: mockLogEntry.outcome,
       details: mockLogEntry.details,
     });
     expect(service.logBufferForTesting).toContainEqual(
