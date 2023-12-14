@@ -9,11 +9,13 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtAuthGuard } from 'src/auth/jwt.auth.guard';
 import { AuditLogService } from 'src/audit/audit-log.service';
+import mockEnv from 'mocked-env';
 
 describe('TaskController (e2e)', () => {
   let app: INestApplication;
   let mongoMemoryServer: MongoMemoryServer;
   let taskService: jest.Mocked<TaskService>;
+  let restoreEnv: () => void;
 
   const mockTask: Partial<Task> = {
     id: uuidv4(),
@@ -36,7 +38,9 @@ describe('TaskController (e2e)', () => {
 
   beforeAll(async () => {
     mongoMemoryServer = await MongoMemoryServer.create();
-    process.env.JWT_SECRET_KEY = 'test-key';
+    restoreEnv = mockEnv({
+      JWT_SECRET_KEY: 'test-key',
+    });
     const mockTaskService: Partial<jest.Mocked<TaskService>> = {
       create: jest.fn(),
       findAll: jest.fn(),
@@ -296,6 +300,7 @@ describe('TaskController (e2e)', () => {
   });
 
   afterAll(async () => {
+    restoreEnv();
     await app.close();
     await mongoMemoryServer.stop();
   });

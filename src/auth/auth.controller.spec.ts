@@ -20,6 +20,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UserModule } from './user/user.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import mockEnv from 'mocked-env';
 
 const mockCreatedUser: Partial<User> = {
   id: uuidv4(),
@@ -48,10 +49,13 @@ describe('AuthController (e2e)', () => {
   let mongoMemoryServer: MongoMemoryServer;
   let authService: jest.Mocked<AuthService>;
   let mockRedisService: jest.Mocked<Redis>;
+  let restoreEnv: () => void;
 
   beforeAll(async () => {
-    process.env.JWT_SECRET_KEY = 'test-key';
     mongoMemoryServer = await MongoMemoryServer.create();
+    restoreEnv = mockEnv({
+      JWT_SECRET_KEY: 'test-key',
+    });
     const mockAuthService: Partial<jest.Mocked<AuthService>> = {
       register: jest.fn(),
       login: jest.fn(),
@@ -294,6 +298,7 @@ describe('AuthController (e2e)', () => {
   });
 
   afterAll(async () => {
+    restoreEnv();
     await app.close();
     await mongoMemoryServer.stop();
   });

@@ -6,18 +6,22 @@ import { Task, TaskSchema } from '../task/task.model';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuditLogService } from 'src/audit/audit-log.service';
+import mockEnv from 'mocked-env';
 
 describe('Guard Integration', () => {
   let app: INestApplication;
   let mongoMemoryServer: MongoMemoryServer;
+  let restoreEnv: () => void;
 
   const mockAuditLogService: Partial<AuditLogService> = {
     logEntry: jest.fn(),
   };
 
   beforeAll(async () => {
-    process.env.JWT_SECRET_KEY = 'test-key';
     mongoMemoryServer = await MongoMemoryServer.create();
+    restoreEnv = mockEnv({
+      JWT_SECRET_KEY: 'test-key',
+    });
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
         MongooseModule.forRootAsync({
@@ -46,6 +50,7 @@ describe('Guard Integration', () => {
 
   afterAll(async () => {
     jest.clearAllMocks();
+    restoreEnv();
     await app.close();
     await mongoMemoryServer.stop();
   });
