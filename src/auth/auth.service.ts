@@ -90,7 +90,7 @@ export class AuthService {
         }
       : null;
   }
-  async verifyRefreshToken(refresh_token: string): Promise<User | null> {
+  async checkRefreshToken(refresh_token: string): Promise<User | null> {
     const isBlocked = await this.redisService.get(`blocklist:${refresh_token}`);
     if (isBlocked) {
       this.auditLogService.logEntry({

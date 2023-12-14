@@ -63,7 +63,7 @@ describe('AuthController (e2e)', () => {
       isEmailInUse: jest.fn(),
       storeTokenDetails: jest.fn(),
       getTokenDetails: jest.fn(),
-      verifyRefreshToken: jest.fn(),
+      checkRefreshToken: jest.fn(),
       invalidateToken: jest.fn(),
     };
     mockRedisService = {
@@ -255,7 +255,7 @@ describe('AuthController (e2e)', () => {
 
   it('should refresh access token', async () => {
     const mockRefreshToken = 'mock-new-token';
-    authService.verifyRefreshToken.mockResolvedValue(mockCreatedUser as User);
+    authService.checkRefreshToken.mockResolvedValue(mockCreatedUser as User);
     const response = await request(app.getHttpServer())
       .post('/api/auth/refresh')
       .set('Cookie', [`refresh_token=${mockRefreshToken}`])

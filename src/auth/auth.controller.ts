@@ -103,7 +103,7 @@ export class AuthController {
   @Post('refresh')
   async refresh(@Req() req: Request) {
     const refresh_token = req.cookies['refresh_token'];
-    const user = await this.authService.verifyRefreshToken(refresh_token);
+    const user = await this.authService.checkRefreshToken(refresh_token);
     if (!user) {
       throw new UnauthorizedException();
     }

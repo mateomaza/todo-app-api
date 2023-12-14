@@ -192,7 +192,7 @@ describe('AuthService', () => {
   it('should identify a revoked refresh token', async () => {
     const refresh_token = 'revokedToken123';
     mockRedisService.get.mockResolvedValue('blocked');
-    await expect(authService.verifyRefreshToken(refresh_token)).rejects.toThrow(
+    await expect(authService.checkRefreshToken(refresh_token)).rejects.toThrow(
       UnauthorizedException,
     );
     expect(mockRedisService.get).toHaveBeenCalledWith(
