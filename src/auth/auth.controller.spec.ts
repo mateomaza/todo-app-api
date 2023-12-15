@@ -253,6 +253,22 @@ describe('AuthController (e2e)', () => {
     });
   });
 
+  it('should invalidate session on IP or user-agent change', async () => {
+    authService.getTokenDetails.mockResolvedValue({
+      stored_ip: 'different-ip',
+      stored_user_agent: 'different-user-agent',
+    });
+    const response = await request(app.getHttpServer())
+      .get('/api/auth/verifyToken')
+      .set('User-Agent', 'mock-user-agent')
+      .expect(HttpStatus.OK);
+    expect(response.body).toEqual({
+      message:
+        'Session invalidated due to security concerns. Please log in again.',
+      reauthenticate: true,
+    });
+  });
+
   it('should refresh access token', async () => {
     const mockRefreshToken = 'mock-new-token';
     authService.checkRefreshToken.mockResolvedValue(mockCreatedUser as User);
