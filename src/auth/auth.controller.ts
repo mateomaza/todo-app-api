@@ -19,12 +19,14 @@ import { JwtService } from '@nestjs/jwt';
 import { JwtAuthGuard } from './jwt.auth.guard';
 import { User } from './user/user.model';
 import { getUser } from './user/get-user.decorator';
+import { AuditLogService } from 'src/audit/audit-log.service';
 
 @Controller('api/auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
     private readonly jwtService: JwtService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   @Post('register')
@@ -38,7 +40,7 @@ export class AuthController {
       const user_id = result.newUser.id;
       const user_ip = req.ip;
       const user_agent = req.headers['user-agent'];
-      const ttl = 803;
+      const ttl = 899;
       await this.authService.storeTokenDetails(
         user_id,
         user_ip,
@@ -78,7 +80,7 @@ export class AuthController {
       const user_id = req.user.id;
       const user_ip = req.ip;
       const user_agent = req.headers['user-agent'];
-      const ttl = 803;
+      const ttl = 899;
       await this.authService.storeTokenDetails(
         user_id,
         user_ip,
@@ -118,14 +120,29 @@ export class AuthController {
   @Get('verifyToken')
   @HttpCode(HttpStatus.OK)
   async verifyToken(@Req() req: Request, @getUser() user: User) {
-    const request_ip = req.ip;
-    const user_agent = req.headers['user-agent'];
+    const current_ip = req.ip;
+    const current_user_agent = req.headers['user-agent'];
+    const refresh_token = req.cookies['refresh_token'];
     const details = await this.authService.getTokenDetails(user.id);
-    const ipMatches = request_ip === details?.stored_ip;
-    const userAgentMatches = user_agent === details?.stored_user_agent;
+    if (
+      current_ip !== details.stored_ip ||
+      current_user_agent !== details.stored_user_agent
+    ) {
+      this.auditLogService.logEntry({
+        level: 'warn',
+        action: 'Anomaly Detected',
+        details: `IP or device change detected for User ${user.id}.`,
+      });
+      await this.authService.invalidateToken(refresh_token);
+      return {
+        message:
+          'Session invalidated due to security concerns. Please log in again.',
+        reauthenticate: true,
+      };
+    }
     return {
       username: user.username,
-      verified: ipMatches && userAgentMatches,
+      verified: true,
     };
   }
 
