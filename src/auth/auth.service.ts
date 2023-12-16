@@ -98,7 +98,7 @@ export class AuthService {
         action: 'Blocked Token Attempt',
         details: `Attempt to use a revoked token.`,
       });
-      throw new UnauthorizedException('Token has been revoked');
+      return null;
     }
     try {
       const payload = this.jwtService.verify(refresh_token);

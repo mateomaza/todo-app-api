@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UnauthorizedException } from '@nestjs/common/exceptions';
 import { AuthService } from './auth.service';
 import { UserService } from './user/user.service';
 import { JwtService } from '@nestjs/jwt';
@@ -192,9 +191,8 @@ describe('AuthService', () => {
   it('should identify a revoked refresh token', async () => {
     const refresh_token = 'revokedToken123';
     mockRedisService.get.mockResolvedValue('blocked');
-    await expect(authService.checkRefreshToken(refresh_token)).rejects.toThrow(
-      UnauthorizedException,
-    );
+    const result = await authService.checkRefreshToken(refresh_token);
+    expect(result).toBeNull();
     expect(mockRedisService.get).toHaveBeenCalledWith(
       `blocklist:${refresh_token}`,
     );
