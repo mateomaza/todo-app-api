@@ -101,7 +101,6 @@ export class AuthController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post('refresh')
   async refresh(@Req() req: Request) {
     const refresh_token = req.cookies['refresh_token'];
@@ -122,12 +121,12 @@ export class AuthController {
   async verifyToken(@Req() req: Request, @getUser() user: User) {
     const current_ip = req.ip;
     const current_user_agent = req.headers['user-agent'];
-    const refresh_token = req.cookies['refresh_token'];
     const details = await this.authService.getTokenDetails(user.id);
     if (
       current_ip !== details.stored_ip ||
       current_user_agent !== details.stored_user_agent
     ) {
+      const refresh_token = req.cookies['refresh_token'];
       this.auditLogService.logEntry({
         level: 'warn',
         action: 'Anomaly Detected',
