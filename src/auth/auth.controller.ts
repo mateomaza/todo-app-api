@@ -118,7 +118,11 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('verifyToken')
   @HttpCode(HttpStatus.OK)
-  async verifyToken(@Req() req: Request, @getUser() user: User) {
+  async verifyToken(
+    @Req() req: Request,
+    @getUser() user: User,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const current_ip = req.ip;
     const current_user_agent = req.headers['user-agent'];
     const details = await this.authService.getTokenDetails(user.id);
@@ -126,21 +130,22 @@ export class AuthController {
       current_ip !== details.stored_ip ||
       current_user_agent !== details.stored_user_agent
     ) {
-      const refresh_token = req.cookies['refresh_token'];
       this.auditLogService.logEntry({
         level: 'warn',
         action: 'Anomaly Detected',
         details: `IP or device change detected for User ${user.id}.`,
       });
-      await this.authService.invalidateToken(refresh_token);
+      const refresh_token = req.cookies['refresh_token'];
+      if (refresh_token) {
+        await this.authService.invalidateToken(refresh_token);
+        res.clearCookie('refresh_token');
+      }
       return {
         message:
           'Session invalidated due to security concerns. Please log in again.',
-        reauthenticate: true,
       };
     }
     return {
-      username: user.username,
       verified: true,
     };
   }

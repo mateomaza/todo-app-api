@@ -248,7 +248,6 @@ describe('AuthController (e2e)', () => {
       .set('User-Agent', 'mock-user-agent')
       .expect(HttpStatus.OK);
     expect(response.body).toEqual({
-      username: mockCreatedUser.username,
       verified: true,
     });
   });
@@ -265,7 +264,6 @@ describe('AuthController (e2e)', () => {
     expect(response.body).toEqual({
       message:
         'Session invalidated due to security concerns. Please log in again.',
-      reauthenticate: true,
     });
   });
 
