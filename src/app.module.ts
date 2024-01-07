@@ -11,6 +11,7 @@ import { TaskController } from './task/task.controller';
 import { AuditLogModule } from './audit/audit-log.module';
 import { config } from 'dotenv';
 import { AuditLogInterceptor } from './audit/audit-log.interceptor';
+import { JwtService } from '@nestjs/jwt';
 
 config();
 
@@ -34,6 +35,7 @@ config();
       useClass: AuditLogInterceptor,
     },
     AppService,
+    JwtService,
   ],
 })
 export class AppModule {}
