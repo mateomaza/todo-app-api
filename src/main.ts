@@ -51,6 +51,9 @@ async function bootstrap(): Promise<INestApplication> {
   if (process.env.NODE_ENV !== 'test') {
     await app.listen(3001);
   }
+  app.enableCors({
+    origin: 'http://localhost:3000',
+  });
   return app;
 }
 
