@@ -2,15 +2,18 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { sanitizeObject, sanitizeString } from './common/sanitize.service';
 import { Request, Response, NextFunction } from 'express';
 import { config } from 'dotenv';
 
 config();
 
-async function bootstrap(): Promise<INestApplication> {
+async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.enableCors({
+    origin: 'http://localhost:3000',
+  });
   app.use(cookieParser());
   app.useGlobalPipes(
     new ValidationPipe({
@@ -51,12 +54,6 @@ async function bootstrap(): Promise<INestApplication> {
   if (process.env.NODE_ENV !== 'test') {
     await app.listen(3001);
   }
-  app.enableCors({
-    origin: 'http://localhost:3000',
-  });
-  return app;
 }
 
-const appPromise = bootstrap();
-
-export { appPromise };
+bootstrap();
