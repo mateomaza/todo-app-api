@@ -20,6 +20,7 @@ import { JwtAuthGuard } from './jwt.auth.guard';
 import { User } from './user/user.model';
 import { getUser } from './user/get-user.decorator';
 import { AuditLogService } from 'src/audit/audit-log.service';
+import { UserResponseDto } from './dto/user-response.dto';
 
 @Controller('api/auth')
 export class AuthController {
@@ -37,6 +38,7 @@ export class AuthController {
   ) {
     const result = await this.authService.register(registerDto);
     if (result.newUser) {
+      const userResponse = new UserResponseDto(result.newUser);
       const user_id = result.newUser.id;
       const user_ip = req.ip;
       const user_agent = req.headers['user-agent'];
@@ -50,12 +52,12 @@ export class AuthController {
       res.cookie('refresh_token', result.refresh_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
       return {
         message: result.message,
-        user: result.newUser,
+        user: userResponse,
         access_token: result.access_token,
       };
     } else {
@@ -77,6 +79,7 @@ export class AuthController {
   ) {
     const result = await this.authService.login(loginDto);
     if (user) {
+      const userResponse = new UserResponseDto(user);
       const user_id = req.user.id;
       const user_ip = req.ip;
       const user_agent = req.headers['user-agent'];
@@ -90,12 +93,12 @@ export class AuthController {
       res.cookie('refresh_token', result.refresh_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
       return {
         message: result.message,
-        user: user,
+        user: userResponse,
         access_token: result.access_token,
       };
     }
