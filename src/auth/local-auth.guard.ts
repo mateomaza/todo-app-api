@@ -12,7 +12,6 @@ export class LocalAuthGuard extends AuthGuard('local') {
   }
   handleRequest(err: any, user: any, info: any) {
     if (err || !user) {
-      console.log(info?.message);
       throw err || new UnauthorizedException(info?.message);
     }
     return user;

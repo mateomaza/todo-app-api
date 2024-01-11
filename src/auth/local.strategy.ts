@@ -3,6 +3,7 @@ import { Strategy } from 'passport-local';
 import { Injectable } from '@nestjs/common';
 import { UserService } from './user/user.service';
 import { AuthService } from './auth.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy) {
@@ -21,7 +22,8 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
       await this.authService.incrementFailedLoginAttempts(username);
       return null;
     }
-    if (user.password !== password) {
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
       await this.authService.incrementFailedLoginAttempts(username);
       return null;
     }
