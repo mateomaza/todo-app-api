@@ -94,7 +94,7 @@ export class AuthService {
   async checkRefreshToken(
     refresh_token: string,
     req: Request,
-  ): Promise<User | null> {
+  ): Promise<{ user: User } | null> {
     const isBlocked = await this.redisService.get(`blocklist:${refresh_token}`);
     if (isBlocked) {
       const ipAddress = req.ip || req.headers['x-forwarded-for'];
@@ -118,7 +118,7 @@ export class AuthService {
         });
         return null;
       }
-      return user;
+      return { user };
     } catch (error) {
       return null;
     }

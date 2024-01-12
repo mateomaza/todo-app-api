@@ -191,7 +191,11 @@ describe('AuthService', () => {
   it('should identify a revoked refresh token', async () => {
     const refresh_token = 'revokedToken123';
     mockRedisService.get.mockResolvedValue('blocked');
-    const result = await authService.checkRefreshToken(refresh_token);
+    const req = {
+      ip: '127.0.0.1',
+      headers: { 'user-agent': 'test-agent' },
+    } as any;
+    const result = await authService.checkRefreshToken(refresh_token, req);
     expect(result).toBeNull();
     expect(mockRedisService.get).toHaveBeenCalledWith(
       `blocklist:${refresh_token}`,
@@ -199,7 +203,48 @@ describe('AuthService', () => {
     expect(mockAuditLogService.logEntry).toHaveBeenCalledWith({
       level: 'warn',
       action: 'Blocked Token Attempt',
-      details: `Attempt to use a revoked token.`,
+      details: expect.stringContaining('Attempt to use a revoked token'),
+    });
+  });
+
+  it('should return user data if the refresh token is valid', async () => {
+    const refresh_token = 'validToken123';
+    const payload = { username: mockCreatedUser.username };
+    mockRedisService.get.mockResolvedValue(null);
+    jwtService.verify.mockReturnValue(payload);
+    userService.findOneByUsername.mockResolvedValue(mockCreatedUser as User);
+
+    const req = {
+      ip: '127.0.0.1',
+      headers: { 'user-agent': 'test-agent' },
+    } as any;
+    const result = await authService.checkRefreshToken(refresh_token, req);
+
+    expect(result).toEqual({ user: mockCreatedUser });
+    expect(jwtService.verify).toHaveBeenCalledWith(refresh_token);
+    expect(userService.findOneByUsername).toHaveBeenCalledWith(
+      payload.username,
+    );
+  });
+
+  it('should return null and log an entry if no user is found for the token', async () => {
+    const refresh_token = 'validTokenButNoUser123';
+    const payload = { username: 'nonexistent_user' };
+    mockRedisService.get.mockResolvedValue(null);
+    jwtService.verify.mockReturnValue(payload);
+    userService.findOneByUsername.mockResolvedValue(null);
+
+    const req = {
+      ip: '127.0.0.1',
+      headers: { 'user-agent': 'test-agent' },
+    } as any;
+    const result = await authService.checkRefreshToken(refresh_token, req);
+
+    expect(result).toBeNull();
+    expect(mockAuditLogService.logEntry).toHaveBeenCalledWith({
+      level: 'warn',
+      action: 'Blocked Token Attempt',
+      details: 'Attempt to check the refresh token with no valid user.',
     });
   });
 
