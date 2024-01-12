@@ -244,7 +244,7 @@ describe('AuthController (e2e)', () => {
       stored_user_agent: 'mock-user-agent',
     });
     const response = await request(app.getHttpServer())
-      .get('/api/auth/verifyToken')
+      .get('/api/auth/verify-session')
       .set('User-Agent', 'mock-user-agent')
       .expect(HttpStatus.OK);
     expect(response.body).toEqual({
@@ -258,7 +258,7 @@ describe('AuthController (e2e)', () => {
       stored_user_agent: 'different-user-agent',
     });
     const response = await request(app.getHttpServer())
-      .get('/api/auth/verifyToken')
+      .get('/api/auth/verify-session')
       .set('User-Agent', 'mock-user-agent')
       .expect(HttpStatus.OK);
     expect(response.body).toEqual({

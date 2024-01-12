@@ -127,9 +127,9 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('verifyToken')
+  @Get('verify-session')
   @HttpCode(HttpStatus.OK)
-  async verifyToken(
+  async verifySession(
     @Req() req: Request,
     @getUser() user: User,
     @Res({ passthrough: true }) res: Response,
