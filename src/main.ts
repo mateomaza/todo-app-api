@@ -5,6 +5,12 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { sanitizeObject, sanitizeString } from './common/sanitize.service';
 import { Request, Response, NextFunction } from 'express';
+import {
+  registerLimiter,
+  checkRefreshTokenLimiter,
+  verifySessionLimiter,
+  refreshTokenLimiter,
+} from './common/rate-limits.config';
 import { config } from 'dotenv';
 
 config();
@@ -52,6 +58,10 @@ async function bootstrap() {
       },
     }),
   );
+  app.use('/api/auth/register', registerLimiter);
+  app.use('/api/auth/check-refresh', checkRefreshTokenLimiter);
+  app.use('/api/auth/verify-session ', verifySessionLimiter);
+  app.use('/api/auth/refresh', refreshTokenLimiter);
   if (process.env.NODE_ENV !== 'test') {
     await app.listen(3001);
   }
