@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { RedisService } from 'src/common/redis.service';
 import { LoginDto } from './dto/login.dto';
 import { AuditLogService } from 'src/audit/audit-log.service';
+import { Request } from 'express';
 
 const MAX_LOGIN_ATTEMPTS = 7;
 
@@ -90,19 +91,33 @@ export class AuthService {
         }
       : null;
   }
-  async checkRefreshToken(refresh_token: string): Promise<User | null> {
+  async checkRefreshToken(
+    refresh_token: string,
+    req: Request,
+  ): Promise<User | null> {
     const isBlocked = await this.redisService.get(`blocklist:${refresh_token}`);
     if (isBlocked) {
+      const ipAddress = req.ip || req.headers['x-forwarded-for'];
+      const userAgent = req.headers['user-agent'];
+      const timestamp = new Date().toISOString();
       this.auditLogService.logEntry({
         level: 'warn',
         action: 'Blocked Token Attempt',
-        details: `Attempt to use a revoked token.`,
+        details: `Attempt to use a revoked token from IP: ${ipAddress} (User Agent: ${userAgent}) at ${timestamp}.`,
       });
       return null;
     }
     try {
       const payload = this.jwtService.verify(refresh_token);
       const user = await this.userService.findOneByUsername(payload.username);
+      if (!user) {
+        this.auditLogService.logEntry({
+          level: 'warn',
+          action: 'Blocked Token Attempt',
+          details: 'Attempt to check the refresh token with no valid user.',
+        });
+        return null;
+      }
       return user;
     } catch (error) {
       return null;
