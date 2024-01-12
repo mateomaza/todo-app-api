@@ -9,11 +9,14 @@ import { AuditLogService } from 'src/audit/audit-log.service';
 import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { RedisService } from 'src/common/redis.service';
+import * as bcrypt from 'bcrypt';
+
+const hashedPassword = bcrypt.hashSync('correct_password', 10);
 
 const mockCreatedUser: Partial<User> = {
   id: uuidv4(),
   username: 'new_user',
-  password: 'correct_password',
+  password: hashedPassword,
   email: 'new_email@example.com',
   createdAt: new Date(),
 };
