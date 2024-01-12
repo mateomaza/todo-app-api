@@ -21,6 +21,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UserModule } from './user/user.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mockEnv from 'mocked-env';
+import { JwtService } from '@nestjs/jwt';
 
 const mockCreatedUser: Partial<User> = {
   id: uuidv4(),
@@ -230,7 +231,6 @@ describe('AuthController (e2e)', () => {
       .post('/api/auth/logout')
       .set('Cookie', [`refresh_token=${mockRefreshToken}`])
       .expect(HttpStatus.OK);
-
     expect(response.body.message).toBe('Logged out successfully');
     expect(response.headers['set-cookie']).toContainEqual(
       expect.stringContaining('refresh_token=;'),
@@ -267,14 +267,38 @@ describe('AuthController (e2e)', () => {
     });
   });
 
-  it('should refresh access token', async () => {
-    const mockRefreshToken = 'mock-new-token';
-    authService.checkRefreshToken.mockResolvedValue(mockCreatedUser as User);
+  it('should validate refresh token and return user data', async () => {
+    authService.checkRefreshToken.mockResolvedValue({
+      user: mockCreatedUser as User,
+    });
+    const mockRefreshToken = 'mock-refresh-token';
+    const response = await request(app.getHttpServer())
+      .post('/api/auth/check-refresh')
+      .set('Cookie', [`refresh_token=${mockRefreshToken}`])
+      .expect(HttpStatus.OK);
+    expect(response.body).toEqual({
+      verified: true,
+      user: {
+        ...mockCreatedUser,
+        createdAt: mockCreatedUser.createdAt.toISOString(),
+      },
+    });
+  });
+
+  it('should refresh access token based on user data', async () => {
+    const jwtService = app.get(JwtService);
+    jest.spyOn(jwtService, 'sign').mockReturnValue('mock-new-access-token');
     const response = await request(app.getHttpServer())
       .post('/api/auth/refresh')
-      .set('Cookie', [`refresh_token=${mockRefreshToken}`])
+      .send({ user: mockCreatedUser })
       .expect(HttpStatus.CREATED);
-    expect(response.body).toHaveProperty('access_token');
+    expect(response.body).toEqual({
+      access_token: 'mock-new-access-token',
+    });
+    expect(jwtService.sign).toHaveBeenCalledWith({
+      username: mockCreatedUser.username,
+      sub: mockCreatedUser.id,
+    });
   });
 
   it('should validate field types in RegisterDto', async () => {

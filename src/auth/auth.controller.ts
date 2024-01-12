@@ -104,16 +104,24 @@ export class AuthController {
     }
   }
 
-  @Post('refresh')
-  async refresh(@Req() req: Request) {
+  @Post('check-refresh')
+  @HttpCode(HttpStatus.OK)
+  async checkRefreshToken(@Req() req: Request) {
     const refresh_token = req.cookies['refresh_token'];
-    const user = await this.authService.checkRefreshToken(refresh_token);
+    const result = await this.authService.checkRefreshToken(refresh_token, req);
+    const user = result.user;
     if (!user) {
       throw new UnauthorizedException();
     }
+    return { verified: true, user: user };
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.CREATED)
+  async refreshToken(@Body() body: { user: User }) {
     const new_access_token = this.jwtService.sign({
-      username: user.username,
-      sub: user.id,
+      username: body.user.username,
+      sub: body.user.id,
     });
     return { access_token: new_access_token };
   }
