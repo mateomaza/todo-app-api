@@ -40,7 +40,7 @@ export class AuthController {
     if (result.newUser) {
       const userResponse = new UserResponseDto(result.newUser);
       const user_id = result.newUser.id;
-      const user_ip = req.ip;
+      const user_ip = req.ip || req.headers['x-forwarded-for'];
       const user_agent = req.headers['user-agent'];
       const ttl = 899;
       await this.authService.storeTokenDetails(
@@ -81,7 +81,7 @@ export class AuthController {
     if (user) {
       const userResponse = new UserResponseDto(user);
       const user_id = req.user.id;
-      const user_ip = req.ip;
+      const user_ip = req.ip || req.headers['x-forwarded-for'];
       const user_agent = req.headers['user-agent'];
       const ttl = 899;
       await this.authService.storeTokenDetails(
@@ -113,17 +113,23 @@ export class AuthController {
     if (!user) {
       throw new UnauthorizedException();
     }
-    return { verified: true, user: user };
+    return { verified: true };
   }
 
   @Post('refresh')
   @HttpCode(HttpStatus.CREATED)
-  async refreshToken(@Body() body: { user: User }) {
-    const new_access_token = this.jwtService.sign({
-      username: body.user.username,
-      sub: body.user.id,
-    });
-    return { access_token: new_access_token };
+  async refreshToken(@Req() req: Request) {
+    const refreshToken = req.cookies['refresh_token'];
+    try {
+      const decoded = this.jwtService.verify(refreshToken);
+      const new_access_token = this.jwtService.sign({
+        username: decoded.username,
+        sub: decoded.sub,
+      });
+      return { access_token: new_access_token };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid token');
+    }
   }
 
   @UseGuards(JwtAuthGuard)
@@ -131,12 +137,12 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async verifySession(
     @Req() req: Request,
-    @getUser() user: User,
+    @getUser() user: any,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const current_ip = req.ip;
+    const current_ip = req.ip || req.headers['x-forwarded-for'];
     const current_user_agent = req.headers['user-agent'];
-    const details = await this.authService.getTokenDetails(user.id);
+    const details = await this.authService.getTokenDetails(user.sub);
     if (
       current_ip !== details.stored_ip ||
       current_user_agent !== details.stored_user_agent
@@ -144,7 +150,7 @@ export class AuthController {
       this.auditLogService.logEntry({
         level: 'warn',
         action: 'Anomaly Detected',
-        details: `IP or device change detected for User ${user.id}.`,
+        details: `IP or device change detected for User ${user.username}.`,
       });
       const refresh_token = req.cookies['refresh_token'];
       if (refresh_token) {

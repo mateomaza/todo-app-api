@@ -267,7 +267,7 @@ describe('AuthController (e2e)', () => {
     });
   });
 
-  it('should validate refresh token and return user data', async () => {
+  it('should validate refresh token', async () => {
     authService.checkRefreshToken.mockResolvedValue({
       user: mockCreatedUser as User,
     });
@@ -278,26 +278,27 @@ describe('AuthController (e2e)', () => {
       .expect(HttpStatus.OK);
     expect(response.body).toEqual({
       verified: true,
-      user: {
-        ...mockCreatedUser,
-        createdAt: mockCreatedUser.createdAt.toISOString(),
-      },
     });
   });
 
-  it('should refresh access token based on user data', async () => {
+  it('should refresh access token based on refresh token', async () => {
     const jwtService = app.get(JwtService);
+    const mockRefreshToken = 'mock-refresh-token';
+    jest.spyOn(jwtService, 'verify').mockReturnValue({
+      username: mockCreatedUser.username,
+      sub: mockCreatedUser.id,
+    });
     jest.spyOn(jwtService, 'sign').mockReturnValue('mock-new-access-token');
     const response = await request(app.getHttpServer())
       .post('/api/auth/refresh')
-      .send({ user: mockCreatedUser })
+      .set('Cookie', [`refresh_token=${mockRefreshToken}`])
       .expect(HttpStatus.CREATED);
     expect(response.body).toEqual({
       access_token: 'mock-new-access-token',
     });
     expect(jwtService.sign).toHaveBeenCalledWith({
-      username: mockCreatedUser.username,
-      sub: mockCreatedUser.id,
+      username: expect.any(String),
+      sub: expect.any(String),
     });
   });
 

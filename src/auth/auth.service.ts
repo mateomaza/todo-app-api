@@ -72,7 +72,7 @@ export class AuthService {
   }
   async storeTokenDetails(
     user_id: string,
-    ip: string,
+    ip: string | string[],
     user_agent: string,
     ttl: number,
   ): Promise<void> {
@@ -83,13 +83,18 @@ export class AuthService {
   async getTokenDetails(user_id: string): Promise<any> {
     const key = `token_details:${user_id}`;
     const storedDetailsString = await this.redisService.get(key);
-    const storedDetails = JSON.parse(storedDetailsString);
-    return storedDetails
-      ? {
-          stored_ip: storedDetails.ip,
-          stored_user_agent: storedDetails.user_agent,
-        }
-      : null;
+    try {
+      const storedDetails = JSON.parse(storedDetailsString);
+      return storedDetails
+        ? {
+            stored_ip: storedDetails.ip,
+            stored_user_agent: storedDetails.user_agent,
+          }
+        : null;
+    } catch (error) {
+      console.error('Error parsing stored details', error);
+      return null;
+    }
   }
   async checkRefreshToken(
     refresh_token: string,
