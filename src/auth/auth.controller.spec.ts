@@ -268,20 +268,18 @@ describe('AuthController (e2e)', () => {
   });
 
   it('should validate refresh token', async () => {
-    authService.checkRefreshToken.mockResolvedValue({
-      user: mockCreatedUser as User,
-    });
     const mockRefreshToken = 'mock-refresh-token';
+    authService.checkRefreshToken.mockResolvedValue({ result: true });
     const response = await request(app.getHttpServer())
       .post('/api/auth/check-refresh')
       .set('Cookie', [`refresh_token=${mockRefreshToken}`])
       .expect(HttpStatus.OK);
     expect(response.body).toEqual({
-      verified: true,
+      verified: { result: true },
     });
   });
 
-  it('should refresh access token based on refresh token', async () => {
+  it('should refresh access_token based on refresh_token', async () => {
     const jwtService = app.get(JwtService);
     const mockRefreshToken = 'mock-refresh-token';
     jest.spyOn(jwtService, 'verify').mockReturnValue({

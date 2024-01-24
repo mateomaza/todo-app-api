@@ -207,7 +207,7 @@ describe('AuthService', () => {
     });
   });
 
-  it('should return user data if the refresh token is valid', async () => {
+  it('should return { result: true } if the refresh token is valid', async () => {
     const refresh_token = 'validToken123';
     const payload = { username: mockCreatedUser.username };
     mockRedisService.get.mockResolvedValue(null);
@@ -218,9 +218,9 @@ describe('AuthService', () => {
       ip: '127.0.0.1',
       headers: { 'user-agent': 'test-agent' },
     } as any;
-    const result = await authService.checkRefreshToken(refresh_token, req);
+    const res = await authService.checkRefreshToken(refresh_token, req);
 
-    expect(result).toEqual({ user: mockCreatedUser });
+    expect(res).toEqual({ result: true });
     expect(jwtService.verify).toHaveBeenCalledWith(refresh_token);
     expect(userService.findOneByUsername).toHaveBeenCalledWith(
       payload.username,
