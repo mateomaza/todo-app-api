@@ -137,7 +137,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async verifySession(
     @Req() req: Request,
-    @getUser() user: any,
+    @getUser() user: User,
     @Res({ passthrough: true }) res: Response,
   ) {
     const current_ip = req.ip || req.headers['x-forwarded-for'];
