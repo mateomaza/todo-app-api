@@ -21,11 +21,13 @@ import { User } from './user/user.model';
 import { getUser } from './user/get-user.decorator';
 import { AuditLogService } from 'src/audit/audit-log.service';
 import { UserResponseDto } from './dto/user-response.dto';
+import { UserService } from './user/user.service';
 
 @Controller('api/auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
+    private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly auditLogService: AuditLogService,
   ) {}
@@ -118,11 +120,15 @@ export class AuthController {
     const refreshToken = req.cookies['refresh_token'];
     try {
       const decoded = this.jwtService.verify(refreshToken);
+      const user = await this.userService.findOneByUsername(decoded.username);
       const new_access_token = this.jwtService.sign({
         username: decoded.username,
         sub: decoded.sub,
       });
-      return { access_token: new_access_token };
+      return {
+        access_token: new_access_token,
+        user,
+      };
     } catch (error) {
       throw new UnauthorizedException('Invalid token');
     }
