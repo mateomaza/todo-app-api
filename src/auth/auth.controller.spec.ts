@@ -149,7 +149,8 @@ describe('AuthController (e2e)', () => {
         password: 'password',
       });
     expect(response.body).toEqual({
-      message: 'Username is already registered',
+      error: 'Conflict',
+      message: 'Username is already registered.',
       statusCode: HttpStatus.CONFLICT,
     });
   });
@@ -171,7 +172,8 @@ describe('AuthController (e2e)', () => {
         password: 'password',
       });
     expect(response.body).toEqual({
-      message: 'Email is already in use',
+      error: 'Conflict',
+      message: 'Email is already in use.',
       statusCode: HttpStatus.CONFLICT,
     });
   });
@@ -280,7 +282,7 @@ describe('AuthController (e2e)', () => {
     });
   });
 
-  it.only('should refresh access_token based on refresh_token', async () => {
+  it('should refresh access_token based on refresh_token', async () => {
     const jwtService = app.get(JwtService);
     const userService = app.get(UserService);
     const mockRefreshToken = 'mock-refresh-token';

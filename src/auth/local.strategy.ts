@@ -17,7 +17,6 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     });
   }
   async validate(username: string, password: string): Promise<any> {
-    username = username.toLowerCase();
     const user = await this.userService.findOneByUsername(username);
     if (!user) {
       await this.authService.incrementFailedLoginAttempts(username);

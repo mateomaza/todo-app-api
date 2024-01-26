@@ -47,6 +47,8 @@ describe('AuditLogMiddleware', () => {
     const mockAuthService: Partial<jest.Mocked<AuthService>> = {
       register: jest.fn(),
       storeTokenDetails: jest.fn(),
+      isUsernameInUse: jest.fn(),
+      isEmailInUse: jest.fn(),
     };
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [

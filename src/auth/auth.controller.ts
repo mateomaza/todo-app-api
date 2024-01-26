@@ -9,6 +9,7 @@ import {
   Res,
   HttpCode,
   UnauthorizedException,
+  ConflictException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
@@ -38,6 +39,13 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
     @Body() registerDto: RegisterDto,
   ) {
+    const { username, email } = registerDto;
+    if (await this.authService.isUsernameInUse(username)) {
+      throw new ConflictException('Username is already registered.');
+    }
+    if (await this.authService.isEmailInUse(email)) {
+      throw new ConflictException('Email is already in use.');
+    }
     const result = await this.authService.register(registerDto);
     if (result.newUser) {
       const userResponse = new UserResponseDto(result.newUser);

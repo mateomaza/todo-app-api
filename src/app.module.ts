@@ -12,6 +12,7 @@ import { AuditLogModule } from './audit/audit-log.module';
 import { config } from 'dotenv';
 import { AuditLogInterceptor } from './audit/audit-log.interceptor';
 import { JwtService } from '@nestjs/jwt';
+import { UserModule } from './auth/user/user.module';
 
 config();
 
@@ -23,6 +24,7 @@ config();
     AuthModule,
     TaskModule,
     AuditLogModule,
+    UserModule,
   ],
   controllers: [AppController, AuthController, TaskController],
   providers: [
