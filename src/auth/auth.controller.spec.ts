@@ -22,6 +22,7 @@ import { UserModule } from './user/user.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mockEnv from 'mocked-env';
 import { JwtService } from '@nestjs/jwt';
+import { UserService } from './user/user.service';
 
 const mockCreatedUser: Partial<User> = {
   id: uuidv4(),
@@ -279,20 +280,28 @@ describe('AuthController (e2e)', () => {
     });
   });
 
-  it('should refresh access_token based on refresh_token', async () => {
+  it.only('should refresh access_token based on refresh_token', async () => {
     const jwtService = app.get(JwtService);
+    const userService = app.get(UserService);
     const mockRefreshToken = 'mock-refresh-token';
     jest.spyOn(jwtService, 'verify').mockReturnValue({
       username: mockCreatedUser.username,
       sub: mockCreatedUser.id,
     });
     jest.spyOn(jwtService, 'sign').mockReturnValue('mock-new-access-token');
+    jest
+      .spyOn(userService, 'findOneByUsername')
+      .mockResolvedValue(mockCreatedUser as User);
     const response = await request(app.getHttpServer())
       .post('/api/auth/refresh')
       .set('Cookie', [`refresh_token=${mockRefreshToken}`])
       .expect(HttpStatus.CREATED);
     expect(response.body).toEqual({
       access_token: 'mock-new-access-token',
+      user: {
+        ...mockCreatedUser,
+        createdAt: expect.any(String),
+      },
     });
     expect(jwtService.sign).toHaveBeenCalledWith({
       username: expect.any(String),

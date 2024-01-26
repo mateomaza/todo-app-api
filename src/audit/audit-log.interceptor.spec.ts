@@ -19,6 +19,7 @@ import { AuditLogModule } from './audit-log.module';
 import { v4 as uuidv4 } from 'uuid';
 import { JwtService } from '@nestjs/jwt';
 import { User } from 'src/auth/user/user.model';
+import { UserModule } from 'src/auth/user/user.module';
 
 @Module({
   imports: [AuditLogModule],
@@ -58,6 +59,7 @@ describe('AuditLogMiddleware', () => {
         MongooseModule.forFeature([
           { name: AuditLog.name, schema: AuditLogSchema },
         ]),
+        UserModule,
       ],
       controllers: [AuthController],
       providers: [
