@@ -22,13 +22,11 @@ import { User } from './user/user.model';
 import { getUser } from './user/get-user.decorator';
 import { AuditLogService } from 'src/audit/audit-log.service';
 import { UserResponseDto } from './dto/user-response.dto';
-import { UserService } from './user/user.service';
 
 @Controller('api/auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
-    private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly auditLogService: AuditLogService,
   ) {}
@@ -61,6 +59,11 @@ export class AuthController {
       );
       res.cookie('refresh_token', result.refresh_token, {
         httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+      res.cookie('authenticated', 'true', {
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -106,6 +109,11 @@ export class AuthController {
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
+      res.cookie('authenticated', 'true', {
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
       return {
         message: result.message,
         user: userResponse,
@@ -125,20 +133,14 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.CREATED)
   async refreshToken(@Req() req: Request) {
-    const refreshToken = req.cookies['refresh_token'];
+    const refresh_token = req.cookies['refresh_token'];
     try {
-      const decoded = this.jwtService.verify(refreshToken);
-      const user = await this.userService.findOneByUsername(decoded.username);
-      const new_access_token = this.jwtService.sign({
-        username: decoded.username,
-        sub: decoded.sub,
-      });
-      return {
-        access_token: new_access_token,
-        user,
-      };
-    } catch (error) {
-      throw new UnauthorizedException('Invalid token');
+      const user = await this.authService.getUserFromToken(refresh_token);
+      const new_access_token =
+        await this.authService.generateNewAccessToken(user);
+      return { access_token: new_access_token, user };
+    } catch (err) {
+      throw new UnauthorizedException('Failed to refresh token');
     }
   }
 
@@ -163,9 +165,11 @@ export class AuthController {
         details: `IP or device change detected for User ${user.username}.`,
       });
       const refresh_token = req.cookies['refresh_token'];
-      if (refresh_token) {
+      const auth_cookie = req.cookies['authenticated'];
+      if (refresh_token && auth_cookie) {
         await this.authService.invalidateToken(refresh_token);
         res.clearCookie('refresh_token');
+        res.clearCookie('authenticated');
       }
       return {
         message:
@@ -182,9 +186,11 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refresh_token = req.cookies['refresh_token'];
-    if (refresh_token) {
+    const auth_cookie = req.cookies['authenticated'];
+    if (refresh_token && auth_cookie) {
       await this.authService.invalidateToken(refresh_token);
       res.clearCookie('refresh_token');
+      res.clearCookie('authenticated');
     }
     return { message: 'Logged out successfully' };
   }
