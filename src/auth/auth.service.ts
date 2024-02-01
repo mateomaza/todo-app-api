@@ -52,7 +52,10 @@ export class AuthService {
     refresh_token: string;
   }> {
     const newUser = await this.userService.create(user);
-    const payload = { username: newUser.username, sub: newUser.id };
+    const payload = {
+      username: newUser.username,
+      sub: newUser.id,
+    };
     const access_token = this.jwtService.sign(payload, { expiresIn: '15m' });
     const refresh_token = this.jwtService.sign(payload, { expiresIn: '7d' });
     return {
@@ -91,8 +94,7 @@ export class AuthService {
             stored_user_agent: storedDetails.user_agent,
           }
         : null;
-    } catch (error) {
-      console.error('Error parsing stored details', error);
+    } catch (err) {
       return null;
     }
   }
@@ -124,8 +126,25 @@ export class AuthService {
         return null;
       }
       return { result: true };
-    } catch (error) {
+    } catch (err) {
       return null;
+    }
+  }
+  async getUserFromToken(refresh_token: string): Promise<any> {
+    try {
+      const decoded = this.jwtService.verify(refresh_token);
+      const user = await this.userService.findOneByUsername(decoded.username);
+      return user;
+    } catch (err) {
+      throw new UnauthorizedException('Invalid token');
+    }
+  }
+  async generateNewAccessToken(userDto: any): Promise<string> {
+    try {
+      const payload = { username: userDto.username, sub: userDto.id };
+      return this.jwtService.sign(payload, { expiresIn: '15m' });
+    } catch (err) {
+      throw new UnauthorizedException('Failed to generate token');
     }
   }
   async invalidateToken(refresh_token: string): Promise<void> {
@@ -142,7 +161,7 @@ export class AuthService {
           'blocked',
         );
       }
-    } catch (error) {
+    } catch (err) {
       throw new UnauthorizedException('Invalid token');
     }
   }
