@@ -19,8 +19,15 @@ config();
 @Global()
 @Module({
   imports: [
+    MongooseModule.forRootAsync({
+      useFactory: () => ({
+        uri:
+          process.env.DB_ENV === 'test'
+            ? process.env.MONGO_TEST_URI
+            : process.env.MONGODB_URI,
+      }),
+    }),
     RedisModule,
-    MongooseModule.forRoot(process.env.MONGO_URI),
     AuthModule,
     TaskModule,
     AuditLogModule,
