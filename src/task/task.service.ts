@@ -22,7 +22,7 @@ export class TaskService {
   }
   async update(id: string, updateTaskDto: UpdateTaskDto): Promise<Task> {
     const updatedTask = await this.taskModel
-      .findByIdAndUpdate(id, updateTaskDto, { new: true })
+      .findOneAndUpdate({ id: id }, updateTaskDto, { new: true })
       .exec();
     if (!updatedTask) {
       throw new Error('Task not found');
