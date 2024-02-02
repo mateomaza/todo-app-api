@@ -24,3 +24,4 @@ export class Task extends Document {
 }
 
 export const TaskSchema = SchemaFactory.createForClass(Task);
+TaskSchema.index({ id: 1 });
