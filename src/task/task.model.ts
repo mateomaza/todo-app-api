@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Schema()
 export class Task extends Document {
-  @Prop({ default: uuidv4() })
+  @Prop({ default: () => uuidv4() })
   id: string;
 
   @Prop()
