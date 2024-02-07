@@ -23,7 +23,10 @@ export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
   @Get()
-  async findAll(): Promise<Task[]> {
+  findAllByUserId(@Query('userId') userId: string) {
+    if (userId) {
+      return this.taskService.findAllByUserId(userId);
+    }
     return this.taskService.findAll();
   }
 

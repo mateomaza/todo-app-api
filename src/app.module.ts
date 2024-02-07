@@ -13,6 +13,7 @@ import { config } from 'dotenv';
 import { AuditLogInterceptor } from './audit/audit-log.interceptor';
 import { JwtService } from '@nestjs/jwt';
 import { UserModule } from './auth/user/user.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 config();
 
@@ -24,7 +25,7 @@ config();
         uri:
           process.env.DB_ENV === 'test'
             ? process.env.MONGO_TEST_URI
-            : process.env.MONGODB_URI,
+            : process.env.MONGO_URI,
       }),
     }),
     RedisModule,
@@ -32,6 +33,7 @@ config();
     TaskModule,
     AuditLogModule,
     UserModule,
+    EventEmitterModule.forRoot(),
   ],
   controllers: [AppController, AuthController, TaskController],
   providers: [

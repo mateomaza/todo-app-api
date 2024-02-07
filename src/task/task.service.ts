@@ -4,6 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Task } from './task.model';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { OnEvent } from '@nestjs/event-emitter';
 
 @Injectable()
 export class TaskService {
@@ -16,6 +17,9 @@ export class TaskService {
   }
   async findAll(): Promise<Task[]> {
     return this.taskModel.find().exec();
+  }
+  async findAllByUserId(userId: string): Promise<Task[]> {
+    return this.taskModel.find({ userId: userId }).populate('userId').exec();
   }
   async findById(id: string): Promise<Task> {
     return this.taskModel.findById(id).exec();
@@ -37,6 +41,15 @@ export class TaskService {
   }
   async findUncompletedTasks(): Promise<Task[]> {
     return this.taskModel.find({ completed: false }).exec();
+  }
+
+  @OnEvent('user.deleted')
+  async handleEvent(payload: { userId: string }) {
+    await this.deleteByUserId(payload.userId);
+  }
+
+  async deleteByUserId(userId: string): Promise<void> {
+    await this.taskModel.deleteMany({ userId }).exec();
   }
 
   async searchTasks(query: string): Promise<Task[]> {

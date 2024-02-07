@@ -155,6 +155,7 @@ export class AuthController {
     const current_ip = req.ip || req.headers['x-forwarded-for'];
     const current_user_agent = req.headers['user-agent'];
     const details = await this.authService.getTokenDetails(user.sub);
+    console.log(details);
     if (
       current_ip !== details.stored_ip ||
       current_user_agent !== details.stored_user_agent

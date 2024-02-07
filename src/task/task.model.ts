@@ -1,4 +1,7 @@
-import { Document } from 'mongoose';
+// Disabling unused vars rule for type import - used for Mongoose schema typing, not directly referenced in the code.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { User } from 'src/auth/user/user.model';
+import mongoose, { Document } from 'mongoose';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -6,6 +9,9 @@ import { v4 as uuidv4 } from 'uuid';
 export class Task extends Document {
   @Prop({ default: () => uuidv4() })
   id: string;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
+  userId: mongoose.Schema.Types.ObjectId;
 
   @Prop()
   title: string;

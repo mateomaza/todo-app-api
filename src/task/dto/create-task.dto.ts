@@ -16,4 +16,8 @@ export class CreateTaskDto {
   @IsNotEmpty()
   @IsString({ message: 'Time must be an ISO date string' })
   time: string;
+
+  @IsNotEmpty()
+  @IsString({ message: 'UserId must be a string' })
+  userId: string;
 }

@@ -272,7 +272,9 @@ describe('AuthController (e2e)', () => {
 
   it('should validate refresh token', async () => {
     const mockRefreshToken = 'mock-refresh-token';
-    authService.checkRefreshToken.mockResolvedValue({ result: true });
+    authService.checkRefreshToken.mockResolvedValue({
+      result: true,
+    });
     const response = await request(app.getHttpServer())
       .post('/api/auth/check-refresh')
       .set('Cookie', [`refresh_token=${mockRefreshToken}`])
