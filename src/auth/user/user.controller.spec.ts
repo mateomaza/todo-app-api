@@ -3,6 +3,7 @@ import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { NotFoundException } from '@nestjs/common';
 import { getModelToken } from '@nestjs/mongoose';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 describe('UserController', () => {
   let userController: UserController;
@@ -14,6 +15,7 @@ describe('UserController', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      imports: [EventEmitterModule.forRoot()],
       controllers: [UserController],
       providers: [
         UserService,

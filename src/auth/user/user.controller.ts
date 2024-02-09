@@ -6,6 +6,13 @@ import { UserService } from './user.service';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  /**
+   * Deletes a user based on MongoDB's _id.
+   * The `id` parameter should be the string representation of MongoDB's ObjectId.
+   *
+   * @param id The user's _id as a string.
+   */
+
   @Delete(':id/delete')
   @UseGuards(JwtAuthGuard)
   async deleteUser(@Param('id') id: string): Promise<void> {

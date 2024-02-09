@@ -23,14 +23,12 @@ export class UserService {
   async findOneByEmail(email: string): Promise<User> {
     return this.userModel.findOne({ email }).exec();
   }
-  async deleteUser(id: string): Promise<any> {
-    const deletedUser = await this.userModel
-      .findOneAndRemove({ id: id })
-      .exec();
+  async deleteUser(_id: string): Promise<any> {
+    const deletedUser = await this.userModel.findByIdAndRemove(_id).exec();
     if (!deletedUser) {
       throw new NotFoundException('User not found');
     }
-    this.eventEmitter.emit('user.deleted', { userId: id });
+    this.eventEmitter.emit('user.deleted', { userId: deletedUser._id });
     return deletedUser;
   }
 }

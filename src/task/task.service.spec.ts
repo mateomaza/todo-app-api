@@ -31,7 +31,7 @@ describe('TaskService', () => {
     create: jest.fn().mockResolvedValue(mockTask),
     find: jest.fn().mockReturnThis(),
     findById: jest.fn().mockReturnThis(),
-    findByIdAndUpdate: jest.fn().mockReturnThis(),
+    findOneAndUpdate: jest.fn().mockReturnThis(),
     findByIdAndDelete: jest.fn().mockReturnThis(),
     exec: jest.fn(),
   };
@@ -57,6 +57,7 @@ describe('TaskService', () => {
       description: 'New Description',
       completed: false,
       time: new Date().toISOString(),
+      userId: 'userid-123',
     };
     expect(await service.create(createdTaskDto)).toEqual(mockTask as Task);
     expect(model.create).toHaveBeenCalledWith(createdTaskDto);
@@ -78,7 +79,7 @@ describe('TaskService', () => {
   });
 
   it('should update a task', async () => {
-    mockTaskModel.findByIdAndUpdate.mockReturnValue({
+    mockTaskModel.findOneAndUpdate.mockReturnValue({
       exec: jest
         .fn()
         .mockResolvedValue({ ...mockTask, title: 'Updated Task Title' }),

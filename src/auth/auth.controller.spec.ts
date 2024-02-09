@@ -21,8 +21,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UserModule } from './user/user.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mockEnv from 'mocked-env';
-import { JwtService } from '@nestjs/jwt';
-import { UserService } from './user/user.service';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 const mockCreatedUser: Partial<User> = {
   id: uuidv4(),
@@ -67,6 +66,8 @@ describe('AuthController (e2e)', () => {
       getTokenDetails: jest.fn(),
       checkRefreshToken: jest.fn(),
       invalidateToken: jest.fn(),
+      getUserFromToken: jest.fn(),
+      generateNewAccessToken: jest.fn(),
     };
     mockRedisService = {
       get: jest.fn(),
@@ -81,6 +82,7 @@ describe('AuthController (e2e)', () => {
           }),
         }),
         MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+        EventEmitterModule.forRoot(),
         AuthModule,
         UserModule,
       ],
@@ -227,16 +229,22 @@ describe('AuthController (e2e)', () => {
     expect(response.body.message).toBe('Invalid credentials');
   });
 
-  it('should logout user, clear refresh token cookie, and invalidate the token', async () => {
+  it('should logout user, clear refresh token and authenticated cookies, and invalidate the token', async () => {
     const mockRefreshToken = 'mock-refresh-token';
     authService.invalidateToken.mockResolvedValue();
     const response = await request(app.getHttpServer())
       .post('/api/auth/logout')
-      .set('Cookie', [`refresh_token=${mockRefreshToken}`])
+      .set('Cookie', [
+        `refresh_token=${mockRefreshToken}`,
+        'authenticated=true',
+      ])
       .expect(HttpStatus.OK);
     expect(response.body.message).toBe('Logged out successfully');
-    expect(response.headers['set-cookie']).toContainEqual(
-      expect.stringContaining('refresh_token=;'),
+    expect(response.headers['set-cookie']).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('refresh_token=;'),
+        expect.stringContaining('authenticated=;'),
+      ]),
     );
     expect(authService.invalidateToken).toHaveBeenCalledWith(mockRefreshToken);
   });
@@ -285,31 +293,26 @@ describe('AuthController (e2e)', () => {
   });
 
   it('should refresh access_token based on refresh_token', async () => {
-    const jwtService = app.get(JwtService);
-    const userService = app.get(UserService);
     const mockRefreshToken = 'mock-refresh-token';
-    jest.spyOn(jwtService, 'verify').mockReturnValue({
-      username: mockCreatedUser.username,
-      sub: mockCreatedUser.id,
-    });
-    jest.spyOn(jwtService, 'sign').mockReturnValue('mock-new-access-token');
+    const mockNewAccessToken = 'mock-new-access-token';
+    const authService = app.get(AuthService);
     jest
-      .spyOn(userService, 'findOneByUsername')
+      .spyOn(authService, 'getUserFromToken')
       .mockResolvedValue(mockCreatedUser as User);
+    jest
+      .spyOn(authService, 'generateNewAccessToken')
+      .mockResolvedValue(mockNewAccessToken);
     const response = await request(app.getHttpServer())
       .post('/api/auth/refresh')
-      .set('Cookie', [`refresh_token=${mockRefreshToken}`])
+      .send({ refreshToken: mockRefreshToken })
       .expect(HttpStatus.CREATED);
+
     expect(response.body).toEqual({
-      access_token: 'mock-new-access-token',
+      access_token: mockNewAccessToken,
       user: {
         ...mockCreatedUser,
         createdAt: expect.any(String),
       },
-    });
-    expect(jwtService.sign).toHaveBeenCalledWith({
-      username: expect.any(String),
-      sub: expect.any(String),
     });
   });
 
