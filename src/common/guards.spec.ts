@@ -7,6 +7,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuditLogService } from 'src/audit/audit-log.service';
 import mockEnv from 'mocked-env';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 describe('Guard Integration', () => {
   let app: INestApplication;
@@ -31,6 +32,7 @@ describe('Guard Integration', () => {
         }),
         MongooseModule.forFeature([{ name: Task.name, schema: TaskSchema }]),
         TaskModule,
+        EventEmitterModule.forRoot(),
       ],
     })
       .overrideProvider(AuditLogService)

@@ -10,6 +10,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { JwtAuthGuard } from 'src/auth/jwt.auth.guard';
 import { AuditLogService } from 'src/audit/audit-log.service';
 import mockEnv from 'mocked-env';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 describe('TaskController (e2e)', () => {
   let app: INestApplication;
@@ -71,6 +72,7 @@ describe('TaskController (e2e)', () => {
         }),
         MongooseModule.forFeature([{ name: Task.name, schema: TaskSchema }]),
         TaskModule,
+        EventEmitterModule.forRoot(),
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -150,6 +152,7 @@ describe('TaskController (e2e)', () => {
         completed: true,
         time: mockTask.time,
         createdAt: mockTask.createdAt,
+        userId: 'userid-123',
       })
       .expect(HttpStatus.CREATED);
     expect(response.body).toEqual(
@@ -219,6 +222,7 @@ describe('TaskController (e2e)', () => {
         title: 'Test Task',
         completed: true,
         time: mockTask.time,
+        userId: 'userid-123',
       })
       .expect(HttpStatus.CREATED);
 

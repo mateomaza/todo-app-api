@@ -20,6 +20,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { JwtService } from '@nestjs/jwt';
 import { User } from 'src/auth/user/user.model';
 import { UserModule } from 'src/auth/user/user.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [AuditLogModule],
@@ -62,6 +63,7 @@ describe('AuditLogMiddleware', () => {
           { name: AuditLog.name, schema: AuditLogSchema },
         ]),
         UserModule,
+        EventEmitterModule.forRoot(),
       ],
       controllers: [AuthController],
       providers: [
