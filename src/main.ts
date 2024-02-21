@@ -53,6 +53,8 @@ async function bootstrap() {
         directives: {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'"],
+          styleSrc: ["'self'", 'https://cdnjs.cloudflare.com'],
+          fontSrc: ["'self'", 'https://cdnjs.cloudflare.com'],
           reportUri: '/report-csp-violation',
         },
       },
