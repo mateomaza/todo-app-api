@@ -33,12 +33,21 @@ export class TaskService {
     }
     return updatedTask;
   }
+
+  /**
+   * Deletes a task based on MongoDB's _id.
+   * The `id` parameter should be the string representation of MongoDB's ObjectId.
+   * The name that represents this expression in the frontend is 'TaskObjectId'
+   *
+   * @param id The user's _id as a string.
+   */
   async remove(id: string): Promise<void> {
     const result = await this.taskModel.findByIdAndDelete(id).exec();
     if (!result) {
       throw new NotFoundException(`Task with ID '${id}' not found`);
     }
   }
+
   async findUncompletedTasks(): Promise<Task[]> {
     return this.taskModel.find({ completed: false }).exec();
   }

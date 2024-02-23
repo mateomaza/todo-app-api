@@ -84,8 +84,12 @@ describe('TaskService', () => {
         .fn()
         .mockResolvedValue({ ...mockTask, title: 'Updated Task Title' }),
     });
-    const updatedTaskDto: UpdateTaskDto = { title: 'Updated Task Title' };
-    expect(await service.update(mockTask.id, updatedTaskDto)).toEqual({
+    const updatedTaskDto: Partial<UpdateTaskDto> = {
+      title: 'Updated Task Title',
+    };
+    expect(
+      await service.update(mockTask.id, updatedTaskDto as UpdateTaskDto),
+    ).toEqual({
       ...mockTask,
       ...updatedTaskDto,
     });
