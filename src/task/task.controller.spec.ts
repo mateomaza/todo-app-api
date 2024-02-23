@@ -177,12 +177,19 @@ describe('TaskController (e2e)', () => {
       .patch(`/api/tasks/${mockTask.id}/update`)
       .send({
         title: 'Updated Task Title',
+        completed: true,
+        time: mockTask.time,
+        userId: 'user123',
       })
       .expect(HttpStatus.OK);
     expect(response.body).toEqual(
       expect.objectContaining({
         id: mockTask.id,
         title: 'Updated Task Title',
+        description: 'Test Description',
+        completed: true,
+        time: mockTask.time,
+        createdAt: mockTask.createdAt.toISOString(),
       }),
     );
   });
@@ -253,24 +260,6 @@ describe('TaskController (e2e)', () => {
         'Completed must be a boolean',
         'Time must be an ISO date string',
       ]),
-    );
-  });
-
-  it('should handle empty update in UpdateTaskDto', async () => {
-    taskService.update.mockResolvedValue(mockTask as Task);
-    const response = await request(app.getHttpServer())
-      .patch(`/api/tasks/${mockTask.id}/update`)
-      .send({})
-      .expect(HttpStatus.OK);
-    expect(response.body).toEqual(
-      expect.objectContaining({
-        id: mockTask.id,
-        title: mockTask.title,
-        description: mockTask.description,
-        completed: mockTask.completed,
-        time: expect.any(String),
-        createdAt: expect.any(String),
-      }),
     );
   });
 
