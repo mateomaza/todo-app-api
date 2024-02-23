@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Schema()
 export class User extends Document {
-  @Prop({ default: () => uuidv4() })
+  @Prop({ default: () => uuidv4(), unique: true })
   id: string;
 
   @Prop()

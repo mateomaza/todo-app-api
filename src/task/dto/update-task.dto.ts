@@ -1,19 +1,23 @@
-import { IsOptional, IsString, IsBoolean } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsBoolean } from 'class-validator';
 
 export class UpdateTaskDto {
-  @IsOptional()
+  @IsNotEmpty()
   @IsString({ message: 'Title must be a string' })
-  title?: string;
+  title: string;
 
   @IsOptional()
   @IsString({ message: 'Description must be a string' })
   description?: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsBoolean({ message: 'Completed must be a boolean' })
-  completed?: boolean;
+  completed: boolean;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString({ message: 'Time must be an ISO date string' })
-  time?: string;
+  time: string;
+
+  @IsNotEmpty()
+  @IsString({ message: 'UserId must be a string' })
+  userId: string;
 }

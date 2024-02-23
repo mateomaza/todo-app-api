@@ -9,6 +9,7 @@ export class UserController {
   /**
    * Deletes a user based on MongoDB's _id.
    * The `id` parameter should be the string representation of MongoDB's ObjectId.
+   * The name that represents this expression in the frontend is 'UserObjectId'
    *
    * @param id The user's _id as a string.
    */

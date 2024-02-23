@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Schema()
 export class Task extends Document {
-  @Prop({ default: () => uuidv4() })
+  @Prop({ default: () => uuidv4(), unique: true })
   id: string;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
