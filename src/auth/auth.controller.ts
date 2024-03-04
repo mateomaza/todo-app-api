@@ -10,16 +10,18 @@ import {
   HttpCode,
   UnauthorizedException,
   ConflictException,
+  Delete,
+  Param,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './local-auth.guard';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { JwtService } from '@nestjs/jwt';
 import { JwtAuthGuard } from './jwt.auth.guard';
 import { User } from './user/user.model';
 import { getUser } from './user/get-user.decorator';
+import { UserService } from './user/user.service';
 import { AuditLogService } from 'src/audit/audit-log.service';
 import { UserResponseDto } from './dto/user-response.dto';
 
@@ -27,7 +29,7 @@ import { UserResponseDto } from './dto/user-response.dto';
 export class AuthController {
   constructor(
     private authService: AuthService,
-    private readonly jwtService: JwtService,
+    private readonly userService: UserService,
     private readonly auditLogService: AuditLogService,
   ) {}
 
@@ -155,7 +157,6 @@ export class AuthController {
     const current_ip = req.ip || req.headers['x-forwarded-for'];
     const current_user_agent = req.headers['user-agent'];
     const details = await this.authService.getTokenDetails(user.sub);
-    console.log(details);
     if (
       current_ip !== details.stored_ip ||
       current_user_agent !== details.stored_user_agent
@@ -194,5 +195,31 @@ export class AuthController {
       res.clearCookie('authenticated');
     }
     return { message: 'Logged out successfully' };
+  }
+
+  /**
+   * Deletes a user based on MongoDB's _id.
+   * The `id` parameter should be the string representation of MongoDB's ObjectId.
+   * The name that represents this expression in the frontend is 'UserObjectId'
+   *
+   * @param id The user's _id as a string.
+   */
+
+  @Delete('users/:id/delete')
+  @UseGuards(JwtAuthGuard)
+  async deleteUser(
+    @Param('id') id: string,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    const refresh_token = req.cookies['refresh_token'];
+    const auth_cookie = req.cookies['authenticated'];
+    if (refresh_token && auth_cookie) {
+      await this.authService.invalidateToken(refresh_token);
+      res.clearCookie('refresh_token');
+      res.clearCookie('authenticated');
+    }
+    await this.userService.deleteUser(id);
+    return;
   }
 }
