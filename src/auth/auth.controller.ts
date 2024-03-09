@@ -23,7 +23,6 @@ import { User } from './user/user.model';
 import { getUser } from './user/get-user.decorator';
 import { UserService } from './user/user.service';
 import { AuditLogService } from 'src/audit/audit-log.service';
-import { UserResponseDto } from './dto/user-response.dto';
 
 @Controller('api/auth')
 export class AuthController {
@@ -47,9 +46,9 @@ export class AuthController {
       throw new ConflictException('Email is already in use.');
     }
     const result = await this.authService.register(registerDto);
-    if (result.newUser) {
-      const userResponse = new UserResponseDto(result.newUser);
-      const user_id = result.newUser.id;
+    const newUser = result.newUser;
+    if (newUser) {
+      const user_id = newUser.id;
       const user_ip = req.ip || req.headers['x-forwarded-for'];
       const user_agent = req.headers['user-agent'];
       const ttl = 899;
@@ -72,7 +71,7 @@ export class AuthController {
       });
       return {
         message: result.message,
-        user: userResponse,
+        user: newUser,
         access_token: result.access_token,
       };
     } else {
@@ -94,7 +93,6 @@ export class AuthController {
   ) {
     const result = await this.authService.login(loginDto);
     if (user) {
-      const userResponse = new UserResponseDto(user);
       const user_id = req.user.id;
       const user_ip = req.ip || req.headers['x-forwarded-for'];
       const user_agent = req.headers['user-agent'];
@@ -118,7 +116,7 @@ export class AuthController {
       });
       return {
         message: result.message,
-        user: userResponse,
+        user: user,
         access_token: result.access_token,
       };
     }
