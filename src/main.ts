@@ -18,7 +18,7 @@ config();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: 'https://www.holi.website',
     credentials: true,
   });
   app.use(cookieParser());
@@ -67,7 +67,8 @@ async function bootstrap() {
     app.use('/api/auth/refresh', refreshTokenLimiter);
   }
   if (process.env.NODE_ENV !== 'test') {
-    await app.listen(3001);
+    const port = process.env.PORT || 3001;
+    await app.listen(port);
   }
 }
 
