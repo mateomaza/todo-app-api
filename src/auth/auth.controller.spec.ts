@@ -40,6 +40,22 @@ jest.mock('./local-auth.guard', () => ({
   })),
 }));
 
+jest.mock('useragent', () => ({
+  parse: jest.fn((uaString) => {
+    if (uaString === 'mock-user-agent') {
+      return {
+        os: { family: 'test-os' },
+        browser: { family: 'test-browser' },
+      };
+    } else {
+      return {
+        os: { family: 'different-os' },
+        browser: { family: 'different-browser' },
+      };
+    }
+  }),
+}));
+
 function mockUserMiddleware(req: Request, res: Response, next: NextFunction) {
   req.user = mockCreatedUser;
   next();
@@ -249,7 +265,7 @@ describe('AuthController (e2e)', () => {
     expect(authService.invalidateToken).toHaveBeenCalledWith(mockRefreshToken);
   });
 
-  it('should verify token and return user details', async () => {
+  it('should verify token', async () => {
     authService.getTokenDetails.mockResolvedValue({
       stored_ip: '::ffff:127.0.0.1',
       stored_user_agent: 'mock-user-agent',
