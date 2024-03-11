@@ -23,6 +23,8 @@ import { User } from './user/user.model';
 import { getUser } from './user/get-user.decorator';
 import { UserService } from './user/user.service';
 import { AuditLogService } from 'src/audit/audit-log.service';
+import ipRangeCheck from 'ip-range-check';
+import useragent from 'useragent';
 
 @Controller('api/auth')
 export class AuthController {
@@ -154,13 +156,17 @@ export class AuthController {
     @getUser() user: User,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const current_ip = req.ip || req.headers['x-forwarded-for'];
+    const current_ip = req.ip;
     const current_user_agent = req.headers['user-agent'];
     const details = await this.authService.getTokenDetails(user.sub);
-    if (
-      current_ip !== details.stored_ip ||
-      current_user_agent !== details.stored_user_agent
-    ) {
+    const ip_allowed = ipRangeCheck(current_ip, details.stored_ip);
+    const current_agent_parsed = useragent.parse(current_user_agent);
+    const stored_agent_parsed = useragent.parse(details.stored_user_agent);
+    const user_agent_allowed =
+      current_agent_parsed.os.family === stored_agent_parsed.os.family &&
+      current_agent_parsed.browser.family ===
+        stored_agent_parsed.browser.family;
+    if (!ip_allowed || !user_agent_allowed) {
       this.auditLogService.logEntry({
         level: 'warn',
         action: 'Anomaly Detected',
