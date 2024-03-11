@@ -171,7 +171,10 @@ export class AuthController {
       if (refresh_token && auth_cookie) {
         await this.authService.invalidateToken(refresh_token);
         res.clearCookie('refresh_token');
-        res.clearCookie('authenticated');
+        res.clearCookie('authenticated', {
+          domain: '.holi.website',
+          path: '/',
+        });
       }
       return {
         message:
@@ -192,7 +195,10 @@ export class AuthController {
     if (refresh_token && auth_cookie) {
       await this.authService.invalidateToken(refresh_token);
       res.clearCookie('refresh_token');
-      res.clearCookie('authenticated');
+      res.clearCookie('authenticated', {
+        domain: '.holi.website',
+        path: '/',
+      });
     }
     return { message: 'Logged out successfully' };
   }
@@ -217,7 +223,10 @@ export class AuthController {
     if (refresh_token && auth_cookie) {
       await this.authService.invalidateToken(refresh_token);
       res.clearCookie('refresh_token');
-      res.clearCookie('authenticated');
+      res.clearCookie('authenticated', {
+        domain: '.holi.website',
+        path: '/',
+      });
     }
     await this.userService.deleteUser(id);
     return;
