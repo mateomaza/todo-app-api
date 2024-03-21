@@ -12,6 +12,7 @@ import {
   refreshTokenLimiter,
 } from './common/rate-limits.config';
 import { config } from 'dotenv';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 config();
 
@@ -29,6 +30,16 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
+  const config = new DocumentBuilder()
+    .setTitle('TaskTracker Docs')
+    .setDescription(
+      'This API serves as the backbone of a Task Management System, facilitating the creation, management, and deletion of tasks. It emphasizes security and user-centric features, including secure authentication with refresh tokens via HttpOnly cookies and comprehensive audit logging. While Redis plays a role in enhancing security by managing blocked refresh tokens, the API also implements XSS protection and CSP headers to safeguard against common vulnerabilities. Rate limiting and the proper use of DTOs ensure a robust and scalable user experience. This documentation outlines all necessary endpoints, supported operations, and security measures.',
+    )
+    .setVersion('1.0')
+    .addTag('TaskTracker')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
   app.use((req: Request, res: Response, next: NextFunction) => {
     if (typeof req.body === 'string') {
       req.body = sanitizeString(req.body);

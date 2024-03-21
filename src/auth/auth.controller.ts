@@ -25,7 +25,16 @@ import { UserService } from './user/user.service';
 import { AuditLogService } from 'src/audit/audit-log.service';
 import ipRangeCheck from 'ip-range-check';
 import useragent from 'useragent';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
+@ApiTags('auth')
 @Controller('api/auth')
 export class AuthController {
   constructor(
@@ -34,6 +43,19 @@ export class AuthController {
     private readonly auditLogService: AuditLogService,
   ) {}
 
+  @ApiOperation({ summary: 'Register a user' })
+  @ApiBody({
+    type: RegisterDto,
+    description: 'Payload to register a user',
+  })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'The user has been successfully created, cookies set',
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'User not created because of data inputted',
+  })
   @Post('register')
   async register(
     @Req() req: Request,
@@ -85,6 +107,23 @@ export class AuthController {
     }
   }
 
+  @ApiOperation({ summary: 'Login a user' })
+  @ApiBody({
+    type: LoginDto,
+    description: 'Payload to login a user',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User has logged in, cookies set',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'User attempted to log in was not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'User details were wrong',
+  })
   @UseGuards(LocalAuthGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -126,6 +165,11 @@ export class AuthController {
     }
   }
 
+  @ApiOperation({ summary: 'Check refresh_token being passed' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Refresh_token was successfully updated',
+  })
   @Post('check-refresh')
   @HttpCode(HttpStatus.OK)
   async checkRefreshToken(@Req() req: Request) {
@@ -134,6 +178,15 @@ export class AuthController {
     return { verified: result };
   }
 
+  @ApiOperation({ summary: 'Refresh access_token with valid refresh_token' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Token was successfully updated',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'No authorization to refresh the token',
+  })
   @Post('refresh')
   @HttpCode(HttpStatus.CREATED)
   async refreshToken(@Req() req: Request) {
@@ -148,6 +201,16 @@ export class AuthController {
     }
   }
 
+  @ApiOperation({ summary: 'Verify session with ip and user_agent' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Session was succesfully verified',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'No authorization to verify session',
+  })
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('verify-session')
   @HttpCode(HttpStatus.OK)
@@ -192,6 +255,16 @@ export class AuthController {
     };
   }
 
+  @ApiOperation({ summary: 'Logout user' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User successfully logged out, cookies cleared',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'No authorization to log out',
+  })
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   @HttpCode(HttpStatus.OK)
@@ -209,18 +282,33 @@ export class AuthController {
     return { message: 'Logged out successfully' };
   }
 
-  /**
-   * Deletes a user based on MongoDB's _id.
-   * The `id` parameter should be the string representation of MongoDB's ObjectId.
-   * The name that represents this expression in the frontend is 'UserObjectId'
-   *
-   * @param id The user's _id as a string.
-   */
-
-  @Delete('users/:id/delete')
+  @ApiOperation({
+    summary: 'Delete user',
+    description:
+      'Deletes a user model instance using its MongoDB ObjectId (`_id`). This is an exception to the general use of UUIDs for identifiers in other operations.',
+  })
+  @ApiParam({
+    name: '_id',
+    description: 'MongoDB ObjectId of the model instance to delete',
+    type: String,
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'The user was successfully deleted, cookies cleared',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'The user desired to be deleted was not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'No authorization to delete this user',
+  })
+  @ApiBearerAuth()
+  @Delete('users/:_id/delete')
   @UseGuards(JwtAuthGuard)
   async deleteUser(
-    @Param('id') id: string,
+    @Param('_id') _id: string,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
@@ -234,7 +322,7 @@ export class AuthController {
         path: '/',
       });
     }
-    await this.userService.deleteUser(id);
+    await this.userService.deleteUser(_id);
     return;
   }
 }
