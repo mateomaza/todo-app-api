@@ -39,6 +39,49 @@ async function bootstrap() {
     .addTag('TaskTracker')
     .build();
   const document = SwaggerModule.createDocument(app, config);
+  document.components.schemas['User'] = {
+    type: 'object',
+    properties: {
+      id: { type: 'string', description: 'UUID for the user' },
+      sub: { type: 'string', description: 'Subscription ID' },
+      username: { type: 'string', description: 'Username' },
+      password: { type: 'string', description: 'Password' },
+      email: { type: 'string', description: 'Email' },
+      createdAt: {
+        type: 'string',
+        format: 'date-time',
+        description: 'User creation date',
+      },
+    },
+    required: ['id', 'sub', 'username', 'email', 'createdAt'],
+  };
+  document.components.schemas['AuditLog'] = {
+    type: 'object',
+    properties: {
+      timestamp: {
+        type: 'string',
+        format: 'date-time',
+        description: 'Log creation date',
+      },
+      level: { type: 'string', description: 'Level of consideration' },
+      userId: { type: 'string', description: 'Possible user id' },
+      action: { type: 'string', description: 'Action taken place' },
+      details: { type: 'string', description: 'Details from the log' },
+      outcome: { type: 'string', description: 'Possible outcome from the log' },
+    },
+    required: ['timestamp', 'level', 'action', 'details'],
+  };
+  document.components.schemas['CreateAuditLogDto'] = {
+    type: 'object',
+    properties: {
+      level: { type: 'string' },
+      userId: { type: 'string' },
+      action: { type: 'string' },
+      details: { type: 'string' },
+      outcome: { type: 'string' },
+    },
+    required: ['level', 'action', 'details'],
+  };
   SwaggerModule.setup('api', app, document);
   app.use((req: Request, res: Response, next: NextFunction) => {
     if (typeof req.body === 'string') {
